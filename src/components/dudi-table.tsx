@@ -217,15 +217,17 @@ export function DudiTable({ onEdit, onDelete, onAdd }: DudiTableProps) {
       </CardHeader>
       
       <CardContent>
-        <div className="rounded-lg border border-blue-100/50 overflow-hidden">
-          <Table>
+        {/* Wrapper agar tabel bisa di-scroll horizontal pada layar kecil */}
+        <div className="rounded-lg border border-blue-100/50 overflow-x-auto">
+          <Table className="min-w-[720px] md:min-w-full">
             <TableHeader className="bg-blue-50/50">
               <TableRow>
                 <TableHead className="font-semibold text-slate-700">Perusahaan</TableHead>
-                <TableHead className="font-semibold text-slate-700">Kontak</TableHead>
-                <TableHead className="font-semibold text-slate-700">Penanggung Jawab</TableHead>
-                <TableHead className="font-semibold text-slate-700">Siswa Magang</TableHead>
-                <TableHead className="font-semibold text-slate-700">Aksi</TableHead>
+                {/* Sembunyikan kolom kontak di layar sangat kecil agar tetap proporsional */}
+                <TableHead className="font-semibold text-slate-700 hidden sm:table-cell">Kontak</TableHead>
+                <TableHead className="font-semibold text-slate-700 hidden md:table-cell">Penanggung Jawab</TableHead>
+                <TableHead className="font-semibold text-slate-700 text-nowrap">Siswa Magang</TableHead>
+                <TableHead className="font-semibold text-slate-700 text-nowrap">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -254,7 +256,7 @@ export function DudiTable({ onEdit, onDelete, onAdd }: DudiTableProps) {
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden sm:table-cell">
                       <div className="space-y-1">
                         {dudi.email && (
                           <div className="flex items-center gap-1 text-sm text-slate-600">
@@ -270,7 +272,7 @@ export function DudiTable({ onEdit, onDelete, onAdd }: DudiTableProps) {
                         )}
                       </div>
                     </TableCell>
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       {dudi.penanggung_jawab && (
                         <div className="flex items-center gap-1 text-sm text-slate-600">
                           <IconUser className="size-3" />

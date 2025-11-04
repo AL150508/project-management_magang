@@ -62,7 +62,7 @@ export function TeacherSidebar({ activeItem, onItemClick }: TeacherSidebarProps)
   }
 
   return (
-    <div className="flex h-full w-64 flex-col bg-white border-r border-blue-100/60 transition-all duration-300 ease-in-out">
+    <div className="flex h-full w-56 md:w-64 flex-col bg-white border-r border-blue-100/60 transition-all duration-300 ease-in-out">
       <div className="flex-1 overflow-y-auto py-4">
         <nav className="space-y-1 px-3">
           {menuItems.map((item) => {

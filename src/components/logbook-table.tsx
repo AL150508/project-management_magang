@@ -251,15 +251,17 @@ export function LogbookTable({ onEdit, onView, onAdd, refreshKey, studentNameFil
       </CardHeader>
 
       <CardContent>
-        <div className="rounded-md border">
-          <Table>
+        {/* Wrapper agar tabel bisa di-scroll horizontal pada layar kecil */}
+        <div className="rounded-md border overflow-x-auto">
+          <Table className="min-w-[760px] md:min-w-full">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[200px]">Siswa & Tanggal</TableHead>
-                <TableHead className="w-[300px]">Kegiatan & Kendala</TableHead>
+                <TableHead className="w-[220px]">Siswa & Tanggal</TableHead>
+                <TableHead className="w-[320px]">Kegiatan & Kendala</TableHead>
                 <TableHead className="w-[120px]">Status</TableHead>
-                <TableHead className="w-[250px]">Catatan</TableHead>
-                <TableHead className="w-[100px]">Aksi</TableHead>
+                {/* Sembunyikan kolom catatan di layar kecil untuk menjaga proporsi */}
+                <TableHead className="w-[280px] hidden md:table-cell">Catatan</TableHead>
+                <TableHead className="w-[100px] text-nowrap">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -306,7 +308,7 @@ export function LogbookTable({ onEdit, onView, onAdd, refreshKey, studentNameFil
                       {getStatusBadge(item.status)}
                     </TableCell>
                     
-                    <TableCell>
+                    <TableCell className="hidden md:table-cell">
                       <div className="space-y-2">
                         <div>
                           <p className="text-xs font-medium text-gray-600">Guru:</p>
