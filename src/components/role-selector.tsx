@@ -8,7 +8,7 @@ export function RoleSelector() {
   const { setRole } = useRole()
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-[100dvh] flex items-center justify-center p-4 pt-[env(safe-area-inset-top)]">
       <div className="w-full max-w-2xl">
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold mb-2">Sistem Manajemen Magang</h1>

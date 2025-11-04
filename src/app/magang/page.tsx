@@ -79,7 +79,7 @@ export default function MagangPage() {
   // Tampilkan loading saat belum mounted (mencegah hydration mismatch)
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-gray-50 flex items-center justify-center pt-[env(safe-area-inset-top)]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
@@ -92,7 +92,7 @@ export default function MagangPage() {
   if (role === "guru") {
     // Tampilan untuk Guru/Admin - dengan tabel manajemen lengkap
     return (
-      <div className="min-h-screen bg-gray-50 transition-all duration-300 ease-in-out">
+      <div className="min-h-[100dvh] bg-gray-50 transition-all duration-300 ease-in-out pt-[env(safe-area-inset-top)]">
         <TeacherHeader 
           userName={userName}
           userRole={role}
@@ -165,7 +165,7 @@ export default function MagangPage() {
 
   // Tampilan untuk Siswa - hanya status magang mereka
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-[100dvh] bg-gray-50 pt-[env(safe-area-inset-top)]">
       <StudentHeader 
         userName={userName}
         userRole={role}

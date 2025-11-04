@@ -49,7 +49,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased pt-[env(safe-area-inset-top)] min-h-screen bg-gradient-to-b from-blue-50 via-cyan-50 to-transparent`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased pt-[env(safe-area-inset-top)] min-h-[100dvh] bg-gradient-to-b from-blue-50 via-cyan-50 to-transparent`}
       >
         {/* dekorasi latar: sembunyikan di layar kecil untuk menghindari crop/overflow */}
         <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden hidden sm:block">

@@ -43,7 +43,7 @@ export default function HomePage() {
   // Prevent hydration mismatch by not rendering until mounted
   if (!mounted) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-gray-50 flex items-center justify-center pt-[env(safe-area-inset-top)]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
@@ -55,7 +55,7 @@ export default function HomePage() {
   // Show transition loading when switching roles
   if (isTransitioning) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-gray-50 flex items-center justify-center pt-[env(safe-area-inset-top)]">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Switching role...</p>
@@ -67,7 +67,7 @@ export default function HomePage() {
   // Jika role adalah siswa, tampilkan layout siswa
   if (role === "siswa") {
     return (
-      <div className="min-h-screen bg-gray-50 transition-all duration-300 ease-in-out">
+      <div className="min-h-[100dvh] bg-gray-50 transition-all duration-300 ease-in-out pt-[env(safe-area-inset-top)]">
         <StudentHeader 
           userName={userName}
           userRole={role}
@@ -88,7 +88,7 @@ export default function HomePage() {
 
   // Jika role adalah guru, tampilkan layout admin/guru
   return (
-    <div className="min-h-screen bg-gray-50 transition-all duration-300 ease-in-out">
+    <div className="min-h-[100dvh] bg-gray-50 transition-all duration-300 ease-in-out pt-[env(safe-area-inset-top)]">
       <TeacherHeader 
         userName={userName}
         userRole={role}
