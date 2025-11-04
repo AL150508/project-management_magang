@@ -1,0 +1,57 @@
+{
+  "name": "Manajemen Magang - SMK Brantas Karangkates",
+  "short_name": "Magang Portal",
+  "description": "Sistem pelaporan magang siswa SMK Brantas Karangkates",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "productivity"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "short_name": "Dashboard",
+      "description": "Buka halaman dashboard",
+      "url": "/dashboard",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "DUDI",
+      "short_name": "DUDI",
+      "description": "Buka halaman DUDI",
+      "url": "/dudi",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Magang",
+      "short_name": "Magang",
+      "description": "Buka halaman magang",
+      "url": "/magang",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Logbook",
+      "short_name": "Logbook",
+      "description": "Buka halaman logbook",
+      "url": "/logbook",
+      "icons": [{ "src": "/icons/icon-192x192.png", "sizes": "192x192" }]
+    }
+  ]
+}
+
