@@ -98,7 +98,7 @@ export default function MagangPage() {
           userRole={role}
           onRoleChange={handleRoleChange}
         />
-        <div className="flex">
+        <div className="flex pt-2 sm:pt-0">
           <TeacherSidebar 
             activeItem={activeItem}
             onItemClick={handleItemClick}
@@ -171,7 +171,7 @@ export default function MagangPage() {
         userRole={role}
         onRoleChange={handleRoleChange}
       />
-      <div className="flex">
+      <div className="flex pt-2 sm:pt-0">
         <StudentSidebar 
           activeItem={activeItem}
           onItemClick={handleItemClick}

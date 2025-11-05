@@ -94,7 +94,7 @@ export default function HomePage() {
         userRole={role}
         onRoleChange={handleRoleChange}
       />
-      <div className="flex">
+      <div className="flex pt-2 sm:pt-0">
         <TeacherSidebar 
           activeItem={activeItem}
           onItemClick={handleItemClick}

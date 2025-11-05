@@ -74,7 +74,7 @@ export default function DudiPage() {
           userRole={role}
           onRoleChange={handleRoleChange}
         />
-        <div className="flex">
+        <div className="flex pt-2 sm:pt-0">
           <SidebarGuru 
             activeItem={activeItem}
             onItemClick={handleItemClick}
@@ -125,7 +125,7 @@ export default function DudiPage() {
         userRole={role}
         onRoleChange={handleRoleChange}
       />
-      <div className="flex">
+      <div className="flex pt-2 sm:pt-0">
         <SidebarSiswa 
           activeItem={activeItem}
           onItemClick={handleItemClick}
