@@ -7,9 +7,10 @@ const withPWA = withPWAInit({
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
   reloadOnOnline: true,
-  disable: process.env.NODE_ENV === "development", // Disable di development
+  disable: process.env.NODE_ENV === "development", // Disable hanya di development
   workboxOptions: {
-    disableDevLogs: true,
+    disableDevLogs: false, // Enable logs untuk debugging
+    skipWaiting: true, // Skip waiting untuk update service worker
     runtimeCaching: [
       {
         urlPattern: /^https:\/\/.*\.supabase\.co\/.*/i,
@@ -53,25 +54,29 @@ const withPWA = withPWAInit({
           },
         },
       },
-      {
-        urlPattern: /^https?:\/\/.*/i,
-        handler: "NetworkFirst",
-        options: {
-          cacheName: "offline-cache",
-          networkTimeoutSeconds: 10,
-          expiration: {
-            maxEntries: 50,
-            maxAgeSeconds: 24 * 60 * 60, // 24 jam
-          },
-          cacheableResponse: {
-            statuses: [0, 200],
-          },
-        },
-      },
     ],
-    // Fallback ke offline.html saat offline
+    // Konfigurasi navigateFallback yang lebih tepat
+    // Hanya gunakan untuk route aplikasi utama, bukan untuk _next atau api
     navigateFallback: "/offline.html",
-    navigateFallbackDenylist: [/^\/api\/.*/, /^\/_next\/.*/],
+    navigateFallbackAllowlist: [
+      /^\/$/, // Root path
+      /^\/dashboard/, 
+      /^\/logbook/, 
+      /^\/magang/, 
+      /^\/dudi/,
+    ],
+    navigateFallbackDenylist: [
+      /^\/api\/.*/, 
+      /^\/_next\/.*/, 
+      /^\/sw\.js/, 
+      /^\/workbox-.*/, 
+      /^\/offline\.html/,
+      /^\/icons\/.*/,
+      /^\/.*\.(svg|png|jpg|jpeg|gif|webp|ico)$/,
+    ],
+    // Gunakan NetworkFirst dengan timeout yang lebih panjang untuk navigation
+    // Ini akan mencoba network dulu sebelum fallback ke offline.html
+    navigationPreload: false, // Disable untuk menghindari masalah
   },
 });
 
