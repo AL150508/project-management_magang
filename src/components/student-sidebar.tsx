@@ -62,9 +62,9 @@ export function StudentSidebar({ activeItem, onItemClick }: StudentSidebarProps)
   }
 
   return (
-    <div className="flex h-full w-56 md:w-64 flex-col bg-white border-r border-blue-100/60 transition-all duration-300 ease-in-out">
+    <div className="flex h-full w-14 flex-col bg-white border-r border-blue-100/60 transition-all duration-300 ease-in-out">
       <div className="flex-1 overflow-y-auto py-4">
-        <nav className="space-y-1 px-3">
+        <nav className="space-y-1 px-1">
           {menuItems.map((item) => {
             const Icon = item.icon // komponen ikon untuk item ini
             // Gunakan pathname sebagai sumber kebenaran, fallback ke activeItem jika pathname tidak tersedia
@@ -76,7 +76,7 @@ export function StudentSidebar({ activeItem, onItemClick }: StudentSidebarProps)
                 href={item.href}
                 onClick={() => handleItemClick(item)}
                 className={cn(
-                  "group flex w-full items-center gap-3 rounded-lg px-3 py-3 text-left text-sm font-medium transition-all hover:bg-blue-50",
+                  "group flex w-full items-center rounded-lg py-3 justify-center text-sm font-medium transition-all hover:bg-blue-50",
                   isActive 
                     ? "bg-blue-600 text-white shadow-sm" 
                     : "text-gray-700 hover:text-blue-600"
@@ -88,15 +88,7 @@ export function StudentSidebar({ activeItem, onItemClick }: StudentSidebarProps)
                     isActive ? "text-white" : "text-gray-400 group-hover:text-blue-600"
                   )} 
                 />
-                <div className="flex-1 min-w-0">
-                  <div className="font-medium">{item.label}</div>
-                  <div className={cn(
-                    "text-xs truncate",
-                    isActive ? "text-blue-100" : "text-gray-500 group-hover:text-blue-500"
-                  )}>
-                    {item.description}
-                  </div>
-                </div>
+                <div className="hidden"></div>
               </Link>
             )
           })}

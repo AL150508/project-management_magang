@@ -1,12 +1,7 @@
 "use client"
 
 // Header untuk tampilan Siswa
-// Menampilkan:
-// - Logo dan judul aplikasi
-// - Teks informasi tengah (pada layar besar)
-// - Pemilih peran (Siswa/Guru) untuk mengubah tampilan yang aktif
-// - Menu profil pengguna (dropdown)
-// Catatan: hanya komentar penjelas, tidak mempengaruhi perilaku.
+// Layout: Logo + Role switcher di bawah (vertikal) | Profile di kanan
 
 import * as React from "react"
 import { IconSchool, IconUser } from "@tabler/icons-react"
@@ -20,7 +15,6 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 
-// Properti yang dibutuhkan Header Siswa
 interface StudentHeaderProps {
   userName: string
   userRole: "siswa" | "guru"
@@ -28,71 +22,49 @@ interface StudentHeaderProps {
 }
 
 export function StudentHeader({ userName, userRole, onRoleChange }: StudentHeaderProps) {
-  // `mounted` untuk menghindari mismatch render di server/client (hydration)
   const [mounted, setMounted] = React.useState(false)
 
   React.useEffect(() => {
     setMounted(true)
   }, [])
 
-  // Saat belum mounted, tampilkan skeleton sederhana (placeholder UI)
   if (!mounted) {
     return (
-      <header className="sticky top-0 z-50 w-full border-b border-blue-100/60 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
-        <div className="container flex h-16 items-center justify-between px-4">
-          <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2">
-              <div className="bg-blue-600 rounded-lg p-2">
+      <header className="w-full px-4 py-3 flex items-center justify-between border-b border-blue-100/60 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60">
+        <div className="flex items-center gap-3 min-w-0">
+          <div className="bg-blue-600 rounded-lg p-2 flex-shrink-0">
                 <div className="h-6 w-6 bg-white rounded animate-pulse"></div>
               </div>
-              <div>
-                <h1 className="text-lg font-bold text-gray-900">Magang Portal Siswa</h1>
-              </div>
+          <div className="min-w-0">
+            <div className="h-5 w-32 bg-gray-200 rounded animate-pulse mb-2"></div>
+            <div className="h-8 w-20 bg-gray-200 rounded animate-pulse"></div>
             </div>
           </div>
           <div className="flex items-center gap-4">
-            <div className="h-8 w-16 bg-gray-200 rounded animate-pulse"></div>
             <div className="h-10 w-10 bg-gray-200 rounded-full animate-pulse"></div>
-          </div>
         </div>
       </header>
     )
   }
 
   return (
-    <header className="sticky top-0 z-50 w-full border-b border-blue-100/60 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 transition-all duration-300 ease-in-out">
-      <div className="container flex h-16 items-center justify-between px-4">
-        {/* Logo dan Nama Aplikasi */}
-        <div className="flex items-center gap-4">
-          <div className="flex items-center gap-2">
-            <div className="bg-blue-600 rounded-lg p-2">
+    <header className="w-full px-4 py-3 flex items-center justify-between gap-4 border-b border-blue-100/60 bg-white/95 backdrop-blur supports-[backdrop-filter]:bg-white/60 transition-all duration-300 ease-in-out min-w-0">
+      {/* Grup Kiri: Logo + Role Switcher (vertikal) */}
+      <div className="flex items-start gap-3 min-w-0 flex-shrink">
+        <div className="bg-blue-600 rounded-lg p-2 flex-shrink-0">
               <IconSchool className="h-6 w-6 text-white" />
             </div>
-            <div>
-              <h1 className="text-lg font-bold text-gray-900">Magang Portal Siswa</h1>
-            </div>
-          </div>
-        </div>
-
-        {/* Teks Tengah */}
-        <div className="hidden lg:block flex-1 text-center">
-          <p className="text-sm text-gray-600 font-medium">
-            SMK Brantas Karangkates Sistem Pelaporan Magang Siswa
-          </p>
-        </div>
-
-        {/* Profil User */}
-        <div className="flex items-center gap-6 ml-auto">
-          {/* Role Selector: tombol untuk beralih peran antar "Siswa" dan "Guru" */}
-          <div className="hidden sm:flex items-center gap-2">
+        <div className="flex flex-col gap-2 min-w-0">
+          <h1 className="text-base sm:text-lg font-bold text-gray-900 whitespace-nowrap">
+            Magang Portal
+          </h1>
+          {/* Role Switcher: Di bawah nama sekolah */}
+          <div className="flex items-center gap-2 flex-shrink-0">
             <Button
               variant={userRole === "siswa" ? "default" : "outline"}
               size="sm"
-              onClick={() => {
-                console.log("Header: Switching to siswa")
-                onRoleChange("siswa")
-              }}
-              className={`h-8 px-4 transition-all duration-200 ease-in-out ${
+              onClick={() => onRoleChange("siswa")}
+              className={`h-8 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap ${
                 userRole === "siswa" 
                   ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm" 
                   : "border-blue-300 text-blue-600 hover:bg-blue-50"
@@ -103,11 +75,8 @@ export function StudentHeader({ userName, userRole, onRoleChange }: StudentHeade
             <Button
               variant={userRole === "guru" ? "default" : "outline"}
               size="sm"
-              onClick={() => {
-                console.log("Header: Switching to guru")
-                onRoleChange("guru")
-              }}
-              className={`h-8 px-4 transition-all duration-200 ease-in-out ${
+              onClick={() => onRoleChange("guru")}
+              className={`h-8 px-3 sm:px-4 text-xs sm:text-sm whitespace-nowrap ${
                 userRole === "guru" 
                   ? "bg-blue-600 hover:bg-blue-700 text-white shadow-sm" 
                   : "border-blue-300 text-blue-600 hover:bg-blue-50"
@@ -116,13 +85,16 @@ export function StudentHeader({ userName, userRole, onRoleChange }: StudentHeade
               Guru
             </Button>
           </div>
+        </div>
+          </div>
 
-          {/* User Profile: dropdown berisi info singkat dan menu aksi akun */}
+      {/* Grup Kanan: Profile */}
+      <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" className="relative h-10 rounded-full px-3">
-                <div className="flex items-center gap-3">
-                  <div className="bg-blue-100 rounded-full p-2">
+            <Button variant="ghost" className="relative h-10 rounded-full px-2 sm:px-3 flex-shrink-0">
+              <div className="flex items-center gap-2 sm:gap-3">
+                <div className="bg-blue-100 rounded-full p-2 flex-shrink-0">
                     <IconUser className="h-4 w-4 text-blue-600" />
                   </div>
                   <div className="hidden sm:block text-left">
@@ -136,21 +108,14 @@ export function StudentHeader({ userName, userRole, onRoleChange }: StudentHeade
               <DropdownMenuLabel className="font-normal">
                 <div className="flex flex-col space-y-1">
                   <p className="text-sm font-medium leading-none">{userName}</p>
-                  <p className="text-xs leading-none text-muted-foreground capitalize">
-                    {userRole}
-                  </p>
+                <p className="text-xs leading-none text-muted-foreground capitalize">{userRole}</p>
                 </div>
               </DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                Profile Settings
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                Logout
-              </DropdownMenuItem>
+            <DropdownMenuItem>Profile Settings</DropdownMenuItem>
+            <DropdownMenuItem>Logout</DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-        </div>
       </div>
     </header>
   )

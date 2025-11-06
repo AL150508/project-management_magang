@@ -77,7 +77,7 @@ export function SectionProgressOverview({
 
   if (loading) {
     return (
-      <Card className="rounded-2xl border border-blue-100/70 bg-white/70 shadow-sm backdrop-blur">
+      <Card className="rounded-2xl border border-blue-100/70 bg-white/70 shadow-lg backdrop-blur">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-blue-900">
             <IconChartBar className="size-5 text-blue-600" />
@@ -95,7 +95,7 @@ export function SectionProgressOverview({
   }
 
   return (
-    <Card className="rounded-2xl border border-blue-100/70 bg-white/70 shadow-sm backdrop-blur">
+    <Card className="rounded-2xl border border-blue-100/70 bg-white/70 shadow-md backdrop-blur">
         <CardHeader className="pb-2">
           <CardTitle className="flex items-center gap-2 text-blue-900">
             <IconChartBar className="size-5 text-blue-600" />

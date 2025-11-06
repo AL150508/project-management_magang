@@ -31,6 +31,10 @@ export default function Page() {
   const handleRoleChange = (newRole: "siswa" | "guru") => {
     console.log("Role changing to:", newRole) // Bisa dihapus jika tidak perlu log
     setRole(newRole)
+    // Refresh halaman setelah role change untuk memastikan semua komponen ter-update
+    setTimeout(() => {
+      window.location.reload()
+    }, 200)
   }
 
   // Fungsi untuk mengganti item sidebar yang aktif
@@ -51,40 +55,36 @@ export default function Page() {
   }
 
   return (
-    <div className="min-h-[100dvh] bg-gray-50 transition-all duration-300 ease-in-out pt-[env(safe-area-inset-top)]">
+    <div className="flex flex-col min-h-[100dvh] min-w-0 bg-gray-50 transition-all duration-300 ease-in-out">
       <TeacherHeader 
         userName={userName}
         userRole={role}
         onRoleChange={handleRoleChange}
       />
-      <div className="flex pt-2 sm:pt-0">
+      <div className="flex flex-1 min-w-0">
         <TeacherSidebar 
           activeItem={activeItem}
           onItemClick={handleItemClick}
         />
-        <div className="flex-1">
-          <div className="flex flex-1 flex-col">
-            <div className="px-4 lg:px-6 py-8">
-              <div className="max-w-4xl">
-                <h1 className="text-4xl font-bold text-slate-900 mb-3">
+        <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-4">
+          {/* Dashboard Header */}
+          <div className="mb-6">
+            <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">
                   Dashboard
                 </h1>
-                <p className="text-lg text-slate-600 leading-relaxed">
+            <p className="text-base sm:text-lg text-slate-600 leading-relaxed">
                   Selamat Datang di sistem Magang Siswa SMK Brantas Karangkates
                 </p>
-              </div>
             </div>
             
-            <div className="@container/main flex flex-1 flex-col gap-2">
-              <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+          <div className="flex flex-col gap-4 md:gap-6">
                 <SectionCards />
-                <div className="px-4 lg:px-6">
-                  <div className="grid gap-6 md:grid-cols-3 items-start">
-                    <div className="md:col-span-2 flex flex-col gap-6">
+            <div className="grid gap-4 md:gap-6 md:grid-cols-3 items-start">
+              <div className="md:col-span-2 flex flex-col gap-4 md:gap-6">
                       <SectionLatestMagang compact minHeightClass="min-h-[380px]" />
                       <SectionLatestLogbook minHeightClass="min-h-[380px]" />
                     </div>
-                    <div className="flex flex-col gap-6">
+              <div className="flex flex-col gap-4 md:gap-6">
                       <SectionProgressOverview />
                       <SectionDudiAktif
                         items={[
@@ -96,10 +96,7 @@ export default function Page() {
                     </div>
                   </div>
                 </div>
-              </div>
-            </div>
-          </div>
-        </div>
+        </main>
       </div>
     </div>
   )

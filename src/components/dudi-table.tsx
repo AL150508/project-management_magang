@@ -218,8 +218,8 @@ export function DudiTable({ onEdit, onDelete, onAdd }: DudiTableProps) {
       
       <CardContent>
         {/* Wrapper agar tabel bisa di-scroll horizontal pada layar kecil */}
-        <div className="rounded-lg border border-blue-100/50 overflow-x-auto">
-          <Table className="min-w-[720px] md:min-w-full">
+    <div className="w-full rounded-lg border border-blue-100/50 overflow-x-auto">
+      <Table className="min-w-[720px] md:min-w-full">
             <TableHeader className="bg-blue-50/50">
               <TableRow>
                 <TableHead className="font-semibold text-slate-700">Perusahaan</TableHead>

@@ -134,7 +134,7 @@ export function SectionLatestMagang({ items, compact = false, minHeightClass }: 
   if (loading) {
     return (
       <section className="px-4 lg:px-6">
-        <div className={`rounded-2xl border border-blue-100/60 bg-white/70 shadow-sm backdrop-blur ${minHeightClass ?? ""}`}>
+        <div className={`rounded-2xl border border-blue-100/60 bg-white/70 shadow-lg backdrop-blur ${minHeightClass ?? ""}`}>
           <header className={`flex items-center gap-2 px-5 ${compact ? "py-3" : "py-4"}`}>
             <div className="bg-sky-500/15 text-sky-700 ring-1 ring-sky-200/60 flex size-8 items-center justify-center rounded-lg">
               <IconSchool className="size-4" />
@@ -166,17 +166,17 @@ export function SectionLatestMagang({ items, compact = false, minHeightClass }: 
           <ul className="divide-y divide-blue-100/70">
             {magangData.map((item) => (
               <li key={item.id} className={`px-5 ${compact ? "py-3" : "py-4"}`}>
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className={`truncate font-medium ${compact ? "text-[13px]" : "text-sm"}`}>{item.studentName}</p>
-                    <p className="text-muted-foreground truncate text-xs">{item.companyName}</p>
+                <div className="flex items-start justify-between gap-3 min-w-0">
+                  <div className="min-w-0 flex-1">
+                    <p className={`font-medium break-words ${compact ? "text-[13px]" : "text-sm"}`}>{item.studentName}</p>
+                    <p className="text-muted-foreground text-xs break-words">{item.companyName}</p>
                     <p className="text-muted-foreground mt-1 flex items-center gap-1 text-xs">
-                      <IconCalendar className="size-3.5" />
-                      {item.startDate} - {item.endDate}
+                      <IconCalendar className="size-3.5 flex-shrink-0" />
+                      <span className="whitespace-nowrap">{item.startDate} - {item.endDate}</span>
                     </p>
                   </div>
                   {item.status && (
-                    <span className="bg-green-500/10 text-green-700 ring-1 ring-green-200/60 inline-flex h-6 items-center rounded-md px-2 text-xs font-medium">
+                    <span className="bg-green-500/10 text-green-700 ring-1 ring-green-200/60 inline-flex h-6 items-center rounded-md px-2 text-xs font-medium flex-shrink-0 whitespace-nowrap">
                       {item.status}
                     </span>
                   )}

@@ -265,8 +265,8 @@ export function DudiCards() {
                 {/* Header */}
                 <div className="flex items-start justify-between">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                      <IconBuilding className="w-5 h-5 text-orange-600" />
+                    <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
+                      <IconBuilding className="w-5 h-5 text-blue-600" />
                     </div>
                     <div>
                       <h3 className="font-semibold text-gray-900 text-lg">
@@ -305,7 +305,7 @@ export function DudiCards() {
                   </div>
                   <div className="w-full bg-gray-200 rounded-full h-2">
                     <div
-                      className="bg-orange-600 h-2 rounded-full transition-all duration-300"
+                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
                       style={{ width: `${getProgressPercentage(dudi.kuota_terisi, dudi.kuota_magang)}%` }}
                     />
                   </div>
@@ -327,7 +327,7 @@ export function DudiCards() {
 
                 {/* Action Button */}
                 <Button 
-                  className="w-full bg-orange-600 hover:bg-orange-700 text-white transition-all duration-200"
+                  className="w-full bg-blue-600 hover:bg-blue-700 text-white transition-all duration-200"
                   disabled={dudi.status === "Penuh"}
                   onClick={() => handleRegister(dudi)}
                 >

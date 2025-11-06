@@ -81,9 +81,9 @@ export function SectionLogbookCards() {
   // DASHBOARD_LOGBOOK_LOADING: Loading state dengan skeleton animation
   if (loading) {
     return (
-      <div className="grid grid-flow-col auto-cols-[minmax(260px,1fr)] gap-6 px-4 lg:px-6 overflow-x-auto overscroll-x-contain snap-x snap-mandatory">
+      <div className="grid w-full min-w-0 grid-flow-col auto-cols-[minmax(200px,1fr)] sm:auto-cols-[minmax(260px,1fr)] gap-6 px-4 lg:px-6 overflow-x-auto overscroll-x-contain snap-x snap-mandatory">
         {[1, 2, 3, 4].map((i) => (
-          <Card key={i} className="@container/card rounded-2xl border border-blue-100/70 bg-white/70 shadow-sm backdrop-blur">
+          <Card key={i} className="@container/card rounded-2xl border border-blue-100/70 bg-white/70 shadow-lg backdrop-blur">
             <CardHeader className="flex flex-row items-start justify-between gap-2">
               <div className="flex-1">
                 <div className="h-4 bg-blue-100/50 rounded animate-pulse mb-2" />
@@ -99,9 +99,10 @@ export function SectionLogbookCards() {
 
   // DASHBOARD_LOGBOOK_CARDS: Card layout untuk statistik logbook
   return (
-    <div className="grid grid-flow-col auto-cols-[minmax(260px,1fr)] gap-6 px-4 lg:px-6 overflow-x-auto overscroll-x-contain snap-x snap-mandatory">
+    <div className="w-full min-w-0">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
       {/* Total Logbook */}
-      <Card className="@container/card rounded-2xl border border-blue-100/70 bg-white/70 shadow-sm backdrop-blur hover:shadow-md transition-all">
+      <Card className="@container/card rounded-2xl border border-blue-100/70 bg-white/70 shadow-lg backdrop-blur hover:shadow-xl transition-all">
         <CardHeader className="flex flex-row items-start justify-between gap-2">
           <div>
             <CardDescription className="text-blue-700/80">Total Logbook</CardDescription>
@@ -117,7 +118,7 @@ export function SectionLogbookCards() {
       </Card>
 
       {/* Disetujui */}
-      <Card className="@container/card rounded-2xl border border-blue-100/70 bg-white/70 shadow-sm backdrop-blur hover:shadow-md transition-all">
+      <Card className="@container/card rounded-2xl border border-blue-100/70 bg-white/70 shadow-lg backdrop-blur hover:shadow-xl transition-all">
         <CardHeader className="flex flex-row items-start justify-between gap-2">
           <div>
             <CardDescription className="text-blue-700/80">Disetujui</CardDescription>
@@ -133,7 +134,7 @@ export function SectionLogbookCards() {
       </Card>
 
       {/* Ditolak */}
-      <Card className="@container/card rounded-2xl border border-blue-100/70 bg-white/70 shadow-sm backdrop-blur hover:shadow-md transition-all">
+      <Card className="@container/card rounded-2xl border border-blue-100/70 bg-white/70 shadow-lg backdrop-blur hover:shadow-xl transition-all">
         <CardHeader className="flex flex-row items-start justify-between gap-2">
           <div>
             <CardDescription className="text-blue-700/80">Ditolak</CardDescription>
@@ -149,7 +150,7 @@ export function SectionLogbookCards() {
       </Card>
 
       {/* Belum Diverifikasi */}
-      <Card className="@container/card rounded-2xl border border-blue-100/70 bg-white/70 shadow-sm backdrop-blur hover:shadow-md transition-all">
+      <Card className="@container/card rounded-2xl border border-blue-100/70 bg-white/70 shadow-lg backdrop-blur hover:shadow-xl transition-all">
         <CardHeader className="flex flex-row items-start justify-between gap-2">
           <div>
             <CardDescription className="text-blue-700/80">Belum Diverifikasi</CardDescription>
@@ -163,6 +164,7 @@ export function SectionLogbookCards() {
           <div className="text-blue-800/80 text-sm">Menunggu review</div>
         </CardContent>
       </Card>
+      </div>
     </div>
   )
 }

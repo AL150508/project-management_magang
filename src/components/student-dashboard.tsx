@@ -72,78 +72,87 @@ export function StudentDashboard({ userName }: StudentDashboardProps) {
   }
 
   return (
-    <div className="flex-1 bg-gray-50/50">
-      <div className="container mx-auto px-4 py-8">
-        {/* Welcome Message */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
-            Selamat datang, {userName}!
-          </h1>
-          <p className="text-gray-600">
-            Kelola kegiatan magang dan logbook harian Anda
-          </p>
-          
-        </div>
+    <div className="flex-1">
+      {/* Welcome Message */}
+      <div className="mb-6">
+        <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">
+          Selamat datang, {userName}!
+        </h1>
+        <p className="text-base sm:text-lg text-slate-600 leading-relaxed">
+          Kelola kegiatan magang dan logbook harian Anda
+        </p>
+      </div>
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Logbook</CardTitle>
-              <IconCalendar className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{studentStats.totalLogbook}</div>
-              <p className="text-xs text-muted-foreground">
-                Laporan yang sudah dibuat
-              </p>
-            </CardContent>
-          </Card>
+      {/* Stats Cards */}
+      <div className="flex flex-col gap-4 md:gap-6">
+        <div className="w-full min-w-0">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
+            <Card className="@container/card rounded-2xl border border-blue-100/70 bg-white/70 shadow-lg backdrop-blur hover:shadow-xl transition-all">
+              <CardHeader className="flex flex-row items-start justify-between gap-2">
+                <div>
+                  <CardDescription className="text-blue-700/80">Total Logbook</CardDescription>
+                  <CardTitle className="text-3xl font-semibold tabular-nums @[250px]/card:text-4xl text-blue-900">{studentStats.totalLogbook}</CardTitle>
+                </div>
+                <div className="bg-blue-500/15 text-blue-600 ring-1 ring-blue-200/60 mt-1 flex size-10 items-center justify-center rounded-xl">
+                  <IconCalendar className="size-5" />
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="text-blue-800/80 text-sm">Laporan yang sudah dibuat</div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Disetujui</CardTitle>
-              <IconCheck className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{studentStats.approvedLogbook}</div>
-              <p className="text-xs text-muted-foreground">
-                Logbook yang sudah disetujui
-              </p>
-            </CardContent>
-          </Card>
+            <Card className="@container/card rounded-2xl border border-blue-100/70 bg-white/70 shadow-lg backdrop-blur hover:shadow-xl transition-all">
+              <CardHeader className="flex flex-row items-start justify-between gap-2">
+                <div>
+                  <CardDescription className="text-blue-700/80">Disetujui</CardDescription>
+                  <CardTitle className="text-3xl font-semibold tabular-nums @[250px]/card:text-4xl text-blue-900">{studentStats.approvedLogbook}</CardTitle>
+                </div>
+                <div className="bg-blue-500/15 text-blue-600 ring-1 ring-blue-200/60 mt-1 flex size-10 items-center justify-center rounded-xl">
+                  <IconCheck className="size-5" />
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="text-blue-800/80 text-sm">Logbook yang sudah disetujui</div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Menunggu</CardTitle>
-              <IconClock className="h-4 w-4 text-yellow-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{studentStats.pendingLogbook}</div>
-              <p className="text-xs text-muted-foreground">
-                Menunggu review guru
-              </p>
-            </CardContent>
-          </Card>
+            <Card className="@container/card rounded-2xl border border-blue-100/70 bg-white/70 shadow-lg backdrop-blur hover:shadow-xl transition-all">
+              <CardHeader className="flex flex-row items-start justify-between gap-2">
+                <div>
+                  <CardDescription className="text-blue-700/80">Menunggu</CardDescription>
+                  <CardTitle className="text-3xl font-semibold tabular-nums @[250px]/card:text-4xl text-blue-900">{studentStats.pendingLogbook}</CardTitle>
+                </div>
+                <div className="bg-blue-500/15 text-blue-600 ring-1 ring-blue-200/60 mt-1 flex size-10 items-center justify-center rounded-xl">
+                  <IconClock className="size-5" />
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="text-blue-800/80 text-sm">Menunggu review guru</div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Perlu Perbaikan</CardTitle>
-              <IconAlertCircle className="h-4 w-4 text-red-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-red-600">{studentStats.rejectedLogbook}</div>
-              <p className="text-xs text-muted-foreground">
-                Logbook yang perlu diperbaiki
-              </p>
-            </CardContent>
-          </Card>
+            <Card className="@container/card rounded-2xl border border-blue-100/70 bg-white/70 shadow-lg backdrop-blur hover:shadow-xl transition-all">
+              <CardHeader className="flex flex-row items-start justify-between gap-2">
+                <div>
+                  <CardDescription className="text-blue-700/80">Perlu Perbaikan</CardDescription>
+                  <CardTitle className="text-3xl font-semibold tabular-nums @[250px]/card:text-4xl text-blue-900">{studentStats.rejectedLogbook}</CardTitle>
+                </div>
+                <div className="bg-blue-500/15 text-blue-600 ring-1 ring-blue-200/60 mt-1 flex size-10 items-center justify-center rounded-xl">
+                  <IconAlertCircle className="size-5" />
+                </div>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <div className="text-blue-800/80 text-sm">Logbook yang perlu diperbaiki</div>
+              </CardContent>
+            </Card>
+          </div>
         </div>
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 md:gap-6">
           {/* Magang Status */}
-          <Card className="lg:col-span-2">
+          <Card className="lg:col-span-2 rounded-xl border border-blue-100/70 bg-white/70 shadow-lg backdrop-blur hover:shadow-xl transition-all">
             <CardHeader>
               <CardTitle>Status Magang</CardTitle>
               <CardDescription>
@@ -176,7 +185,7 @@ export function StudentDashboard({ userName }: StudentDashboardProps) {
           </Card>
 
           {/* Recent Activities */}
-          <Card>
+          <Card className="rounded-xl border border-blue-100/70 bg-white/70 shadow-lg backdrop-blur hover:shadow-xl transition-all">
             <CardHeader>
               <CardTitle>Aktivitas Terbaru</CardTitle>
               <CardDescription>

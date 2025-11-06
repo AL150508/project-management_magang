@@ -55,7 +55,7 @@ export function DudiList() {
 
   if (loading) {
     return (
-      <Card className="rounded-2xl border border-blue-100/60 bg-white/70 shadow-sm backdrop-blur">
+      <Card className="rounded-2xl border border-blue-100/60 bg-white/70 shadow-lg backdrop-blur">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <IconBuilding className="size-5 text-blue-600" />
@@ -87,7 +87,7 @@ export function DudiList() {
 
   if (!data || data.length === 0) {
     return (
-      <Card className="rounded-2xl border border-blue-100/60 bg-white/70 shadow-sm backdrop-blur">
+      <Card className="rounded-2xl border border-blue-100/60 bg-white/70 shadow-lg backdrop-blur">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <IconBuilding className="size-5 text-blue-600" />
@@ -103,8 +103,9 @@ export function DudiList() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div className="grid grid-flow-col auto-cols-[minmax(260px,1fr)] gap-6 overflow-x-auto overscroll-x-contain snap-x snap-mandatory">
-        <Card className="@container/card rounded-2xl border border-blue-100/70 bg-white/70 shadow-sm backdrop-blur hover:shadow-md transition-all">
+      <div className="w-full min-w-0">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 md:gap-6">
+        <Card className="@container/card rounded-2xl border border-blue-100/70 bg-white/70 shadow-lg backdrop-blur hover:shadow-xl transition-all">
           <CardHeader className="flex flex-row items-start justify-between gap-2">
             <div>
               <CardDescription className="text-blue-700/80">Total Partner</CardDescription>
@@ -116,7 +117,7 @@ export function DudiList() {
           </CardHeader>
         </Card>
 
-        <Card className="@container/card rounded-2xl border border-blue-100/70 bg-white/70 shadow-sm backdrop-blur hover:shadow-md transition-all">
+        <Card className="@container/card rounded-2xl border border-blue-100/70 bg-white/70 shadow-lg backdrop-blur hover:shadow-xl transition-all">
           <CardHeader className="flex flex-row items-start justify-between gap-2">
             <div>
               <CardDescription className="text-blue-700/80">Total Kapasitas</CardDescription>
@@ -127,9 +128,10 @@ export function DudiList() {
             </div>
           </CardHeader>
         </Card>
+        </div>
       </div>
 
-      <Card className="rounded-2xl border border-blue-100/60 bg-white/70 shadow-sm backdrop-blur">
+      <Card className="rounded-2xl border border-blue-100/60 bg-white/70 shadow-lg backdrop-blur">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <IconBuilding className="size-5 text-blue-600" />

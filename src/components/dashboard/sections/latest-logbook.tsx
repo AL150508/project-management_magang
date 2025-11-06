@@ -86,7 +86,7 @@ export function SectionLatestLogbook({ items, compact = false, minHeightClass }:
   if (loading) {
     return (
       <section className="px-4 lg:px-6">
-        <div className={`rounded-2xl border border-blue-100/60 bg-white/70 shadow-sm backdrop-blur ${minHeightClass ?? ""}`}>
+        <div className={`rounded-2xl border border-blue-100/60 bg-white/70 shadow-lg backdrop-blur ${minHeightClass ?? ""}`}>
           <header className={`flex items-center gap-2 px-5 ${compact ? "py-3" : "py-4"}`}>
             <div className="bg-teal-500/15 text-teal-700 ring-1 ring-teal-200/60 flex size-8 items-center justify-center rounded-lg">
               <IconNotebook className="size-4" />
@@ -128,24 +128,24 @@ export function SectionLatestLogbook({ items, compact = false, minHeightClass }:
         <ul className="divide-y divide-blue-100/70">
           {logbookData.map((item) => (
             <li key={item.id} className={`px-5 ${compact ? "py-3" : "py-4"}`}>
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex items-start justify-between gap-3 min-w-0">
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <IconUser className="size-3.5 text-gray-500" />
-                    <p className={`truncate font-medium ${compact ? "text-[13px]" : "text-sm"}`}>
+                    <IconUser className="size-3.5 text-gray-500 flex-shrink-0" />
+                    <p className={`font-medium break-words ${compact ? "text-[13px]" : "text-sm"}`}>
                       {item.studentName}
                     </p>
                   </div>
-                  <p className="text-muted-foreground truncate text-xs mb-2">
+                  <p className="text-muted-foreground text-xs mb-2 line-clamp-2 break-words">
                     {item.activity}
                   </p>
                   <p className="text-muted-foreground flex items-center gap-1 text-xs">
-                    <IconCalendar className="size-3.5" />
-                    {item.date}
+                    <IconCalendar className="size-3.5 flex-shrink-0" />
+                    <span className="whitespace-nowrap">{item.date}</span>
                   </p>
                 </div>
                 {item.status && (
-                  <span className={`inline-flex h-6 items-center rounded-md px-2 text-xs font-medium ${getStatusColor(item.status)}`}>
+                  <span className={`inline-flex h-6 items-center rounded-md px-2 text-xs font-medium flex-shrink-0 whitespace-nowrap ${getStatusColor(item.status)}`}>
                     {item.status}
                   </span>
                 )}

@@ -62,9 +62,10 @@ export function SectionCards() {
   }, [loadCounts])
 
   return (
-    <div className="grid grid-flow-col auto-cols-[minmax(260px,1fr)] gap-6 px-4 lg:px-6 overflow-x-auto overscroll-x-contain snap-x snap-mandatory">
+    <div className="w-full min-w-0">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6">
       {/* Total Siswa */}
-      <Card className="@container/card rounded-2xl border border-blue-100/70 bg-white/70 shadow-sm backdrop-blur hover:shadow-md transition-all">
+      <Card className="@container/card rounded-2xl border border-blue-100/70 bg-white/70 shadow-lg backdrop-blur hover:shadow-xl transition-all">
         <CardHeader className="flex flex-row items-start justify-between gap-2">
           <div>
             <CardDescription className="text-blue-700/80">Total siswa</CardDescription>
@@ -80,7 +81,7 @@ export function SectionCards() {
       </Card>
 
       {/* Dudi Partner */}
-      <Card className="@container/card rounded-2xl border border-blue-100/70 bg-white/70 shadow-sm backdrop-blur hover:shadow-md transition-all">
+      <Card className="@container/card rounded-2xl border border-blue-100/70 bg-white/70 shadow-lg backdrop-blur hover:shadow-xl transition-all">
         <CardHeader className="flex flex-row items-start justify-between gap-2">
           <div>
             <CardDescription className="text-blue-700/80">Dudi Partner</CardDescription>
@@ -96,7 +97,7 @@ export function SectionCards() {
       </Card>
 
       {/* Siswa Magang */}
-      <Card className="@container/card rounded-2xl border border-blue-100/70 bg-white/70 shadow-sm backdrop-blur hover:shadow-md transition-all">
+      <Card className="@container/card rounded-2xl border border-blue-100/70 bg-white/70 shadow-lg backdrop-blur hover:shadow-xl transition-all">
         <CardHeader className="flex flex-row items-start justify-between gap-2">
           <div>
             <CardDescription className="text-blue-700/80">Siswa Magang</CardDescription>
@@ -112,7 +113,7 @@ export function SectionCards() {
       </Card>
 
       {/* Logbook */}
-      <Card className="@container/card rounded-2xl border border-blue-100/70 bg-white/70 shadow-sm backdrop-blur hover:shadow-md transition-all">
+      <Card className="@container/card rounded-2xl border border-blue-100/70 bg-white/70 shadow-lg backdrop-blur hover:shadow-xl transition-all">
         <CardHeader className="flex flex-row items-start justify-between gap-2">
           <div>
             <CardDescription className="text-blue-700/80">Logbook</CardDescription>
@@ -131,6 +132,7 @@ export function SectionCards() {
           </div>
         </CardFooter>
       </Card>
+      </div>
     </div>
   )
 }

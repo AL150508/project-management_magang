@@ -252,7 +252,7 @@ export function LogbookTable({ onEdit, onView, onAdd, refreshKey, studentNameFil
 
       <CardContent>
         {/* Wrapper agar tabel bisa di-scroll horizontal pada layar kecil */}
-        <div className="rounded-md border overflow-x-auto">
+        <div className="w-full rounded-md border overflow-x-auto">
           <Table className="min-w-[760px] md:min-w-full">
             <TableHeader>
               <TableRow>

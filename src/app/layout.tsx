@@ -3,6 +3,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { RoleProvider } from "@/context/role-context";
 import { PWARegister } from "@/components/pwa-register";
+import { Toaster } from "@/components/ui/sonner";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -50,7 +51,7 @@ export default function RootLayout({
         <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased pt-[env(safe-area-inset-top)] min-h-[100dvh] bg-white sm:bg-gradient-to-b sm:from-blue-50 sm:via-cyan-50 sm:to-transparent`}
+        className={`${geistSans.variable} ${geistMono.variable} antialiased min-h-[100dvh] overflow-x-hidden bg-white sm:bg-gradient-to-b sm:from-blue-50 sm:via-cyan-50 sm:to-transparent`}
       >
         {/* dekorasi latar: sembunyikan di layar kecil untuk menghindari crop/overflow */}
         <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden hidden sm:block">
@@ -70,6 +71,11 @@ export default function RootLayout({
           <RoleProvider>{children}</RoleProvider>
         </div>
         <PWARegister />
+        <Toaster 
+          position="top-right"
+          richColors
+          closeButton
+        />
       </body>
     </html>
   );

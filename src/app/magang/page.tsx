@@ -41,6 +41,10 @@ export default function MagangPage() {
   const handleRoleChange = (newRole: "siswa" | "guru") => {
     console.log("Role changing to:", newRole)
     setRole(newRole)
+    // Refresh halaman setelah role change untuk memastikan semua komponen ter-update
+    setTimeout(() => {
+      window.location.reload()
+    }, 200)
   }
 
   // Handler untuk klik item sidebar
@@ -79,7 +83,7 @@ export default function MagangPage() {
   // Tampilkan loading saat belum mounted (mencegah hydration mismatch)
   if (!mounted) {
     return (
-      <div className="min-h-[100dvh] bg-gray-50 flex items-center justify-center pt-[env(safe-area-inset-top)]">
+      <div className="flex flex-col min-h-[100dvh] min-w-0 bg-gray-50 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
           <p className="text-gray-600">Loading...</p>
@@ -92,38 +96,33 @@ export default function MagangPage() {
   if (role === "guru") {
     // Tampilan untuk Guru/Admin - dengan tabel manajemen lengkap
     return (
-      <div className="min-h-[100dvh] bg-gray-50 transition-all duration-300 ease-in-out pt-[env(safe-area-inset-top)]">
+      <div className="flex flex-col min-h-[100dvh] min-w-0 bg-gray-50 transition-all duration-300 ease-in-out">
         <TeacherHeader 
           userName={userName}
           userRole={role}
           onRoleChange={handleRoleChange}
         />
-        <div className="flex pt-2 sm:pt-0">
+        <div className="flex flex-1 min-w-0">
           <TeacherSidebar 
             activeItem={activeItem}
             onItemClick={handleItemClick}
           />
-          <div className="flex-1">
-            <div className="flex flex-1 flex-col">
+          <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-4">
               {/* Header Section */}
-              <div className="px-4 lg:px-6 py-8">
-                <div className="max-w-4xl">
-                  <h1 className="text-4xl font-bold text-slate-900 mb-3">
+            <div className="mb-6">
+              <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">
                     Manajemen Siswa Magang
                   </h1>
-                  <p className="text-lg text-slate-600 leading-relaxed">
+              <p className="text-base sm:text-lg text-slate-600 leading-relaxed">
                     Kelola data siswa yang sedang melaksanakan magang di industri
                   </p>
-                </div>
               </div>
               
-              <div className="@container/main flex flex-1 flex-col gap-2">
-                <div className="flex flex-col gap-4 py-4 md:gap-6 md:py-6">
+            <div className="flex flex-col gap-4 md:gap-6">
                   {/* Stats Cards - menampilkan statistik magang */}
                   <SectionMagangCards />
 
                   {/* Magang Table - tabel data siswa magang */}
-                  <div className="px-4 lg:px-6">
                     <MagangTable 
                       onEdit={handleEdit}
                       onAdd={handleAdd}
@@ -131,10 +130,7 @@ export default function MagangPage() {
                       refreshKey={refreshKey}
                     />
                   </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          </main>
         </div>
 
         {/* Modals untuk tambah/edit data magang */}
@@ -165,22 +161,20 @@ export default function MagangPage() {
 
   // Tampilan untuk Siswa - hanya status magang mereka
   return (
-    <div className="min-h-[100dvh] bg-gray-50 pt-[env(safe-area-inset-top)]">
+    <div className="flex flex-col min-h-[100dvh] min-w-0 bg-gray-50 transition-all duration-300 ease-in-out">
       <StudentHeader 
         userName={userName}
         userRole={role}
         onRoleChange={handleRoleChange}
       />
-      <div className="flex pt-2 sm:pt-0">
+      <div className="flex flex-1 min-w-0">
         <StudentSidebar 
           activeItem={activeItem}
           onItemClick={handleItemClick}
         />
-        <div className="flex-1 bg-gray-50/50">
-          <div className="container mx-auto px-4 py-8">
+        <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-4">
             <StatusMagangSiswa studentName={userName} />
-          </div>
-        </div>
+        </main>
       </div>
     </div>
   )
