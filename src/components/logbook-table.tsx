@@ -208,7 +208,7 @@ export function LogbookTable({ onEdit, onView, onAdd, refreshKey, studentNameFil
   }
 
   return (
-    <Card>
+    <Card className="rounded-2xl border border-blue-100/60 bg-white/70 shadow-lg backdrop-blur">
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
@@ -250,9 +250,9 @@ export function LogbookTable({ onEdit, onView, onAdd, refreshKey, studentNameFil
         </div>
       </CardHeader>
 
-      <CardContent>
+      <CardContent className="p-4 sm:p-6">
         {/* Wrapper agar tabel bisa di-scroll horizontal pada layar kecil */}
-        <div className="w-full rounded-md border overflow-x-auto">
+        <div className="w-full min-w-0 rounded-md border overflow-x-auto">
           <Table className="min-w-[760px] md:min-w-full">
             <TableHeader>
               <TableRow>
@@ -276,14 +276,14 @@ export function LogbookTable({ onEdit, onView, onAdd, refreshKey, studentNameFil
               ) : (
                 paginatedData.map((item) => (
                   <TableRow key={item.id}>
-                    <TableCell>
-                      <div className="flex items-start gap-3">
+                    <TableCell className="min-w-0">
+                      <div className="flex items-start gap-3 min-w-0">
                         <div className="w-8 h-8 bg-cyan-100 rounded-full flex items-center justify-center flex-shrink-0">
                           <IconUser className="w-4 h-4 text-cyan-600" />
                         </div>
-                        <div className="min-w-0">
-                          <p className="font-medium text-sm">{item.nama_siswa}</p>
-                          <p className="text-xs text-gray-500 mt-1">{formatDate(item.tanggal)}</p>
+                        <div className="min-w-0 flex-1">
+                          <p className="font-medium text-sm break-words">{item.nama_siswa}</p>
+                          <p className="text-xs text-gray-500 mt-1 break-words">{formatDate(item.tanggal)}</p>
                           {item.foto && (
                             <p className="text-xs text-blue-600 mt-1">Ada foto</p>
                           )}
@@ -291,15 +291,15 @@ export function LogbookTable({ onEdit, onView, onAdd, refreshKey, studentNameFil
                       </div>
                     </TableCell>
                     
-                    <TableCell>
-                      <div className="space-y-2">
-                        <div>
+                    <TableCell className="min-w-0">
+                      <div className="space-y-2 min-w-0">
+                        <div className="min-w-0">
                           <p className="text-xs font-medium text-gray-600">Kegiatan:</p>
-                          <p className="text-sm text-gray-800 line-clamp-2">{item.kegiatan}</p>
+                          <p className="text-sm text-gray-800 line-clamp-2 break-words">{item.kegiatan}</p>
                         </div>
-                        <div>
+                        <div className="min-w-0">
                           <p className="text-xs font-medium text-gray-600">Kendala:</p>
-                          <p className="text-sm text-gray-800 line-clamp-2">{item.kendala}</p>
+                          <p className="text-sm text-gray-800 line-clamp-2 break-words">{item.kendala}</p>
                         </div>
                       </div>
                     </TableCell>
@@ -364,20 +364,18 @@ export function LogbookTable({ onEdit, onView, onAdd, refreshKey, studentNameFil
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between mt-4">
-            <div className="text-sm text-gray-500">
-              Menampilkan {startIndex + 1} sampai {Math.min(startIndex + pageSize, filteredData.length)} dari {filteredData.length} data
-            </div>
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 px-4 sm:px-0">
+            <div className="flex items-center gap-2 flex-wrap justify-center">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
+                className="flex-shrink-0"
               >
                 Sebelumnya
               </Button>
-              <span className="text-sm">
+              <span className="text-sm text-gray-600 whitespace-nowrap">
                 Halaman {currentPage} dari {totalPages}
               </span>
               <Button
@@ -385,6 +383,7 @@ export function LogbookTable({ onEdit, onView, onAdd, refreshKey, studentNameFil
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
+                className="flex-shrink-0"
               >
                 Selanjutnya
               </Button>

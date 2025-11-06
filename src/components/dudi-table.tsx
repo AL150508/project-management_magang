@@ -166,42 +166,42 @@ export function DudiTable({ onEdit, onDelete, onAdd }: DudiTableProps) {
   }
 
   return (
-    <Card className="rounded-2xl border border-blue-100/60 bg-white/70 shadow-sm backdrop-blur">
+    <Card className="rounded-2xl border border-blue-100/60 bg-white/70 shadow-lg backdrop-blur">
       <CardHeader>
-        <div className="flex items-center justify-between">
-          <div>
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 min-w-0">
+          <div className="min-w-0 flex-1">
             <CardTitle className="flex items-center gap-2">
-              <IconBuilding className="size-5 text-blue-600" />
-              Daftar DUDI
+              <IconBuilding className="size-5 text-blue-600 flex-shrink-0" />
+              <span className="break-words">Daftar DUDI</span>
             </CardTitle>
-            <CardDescription>Kelola data perusahaan mitra</CardDescription>
+            <CardDescription className="break-words">Kelola data perusahaan mitra</CardDescription>
           </div>
           {onAdd && (
             <Button
               onClick={onAdd}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
+              className="bg-blue-600 hover:bg-blue-700 text-white flex-shrink-0 w-full sm:w-auto"
             >
               <IconPlus className="size-4 mr-2" />
-              Tambah DUDI
+              DUDI
             </Button>
           )}
         </div>
         
         {/* Search and Controls */}
-        <div className="flex items-center gap-4 mt-4">
-          <div className="relative flex-1">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4 mt-4 min-w-0">
+          <div className="relative flex-1 min-w-0">
             <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 size-4 text-slate-400" />
             <Input
               placeholder="Cari perusahaan, alamat, penanggung jawab"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 w-full min-w-0"
             />
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-sm text-slate-600">Tampilkan:</span>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <span className="text-sm text-slate-600 whitespace-nowrap">Tampilkan:</span>
             <Select value={pageSize.toString()} onValueChange={(value) => setPageSize(Number(value))}>
-              <SelectTrigger className="w-24">
+              <SelectTrigger className="w-20 sm:w-24">
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -211,14 +211,13 @@ export function DudiTable({ onEdit, onDelete, onAdd }: DudiTableProps) {
                 <SelectItem value="50">50</SelectItem>
               </SelectContent>
             </Select>
-            <span className="text-sm text-slate-600">entri</span>
           </div>
         </div>
       </CardHeader>
       
-      <CardContent>
+      <CardContent className="p-4 sm:p-6">
         {/* Wrapper agar tabel bisa di-scroll horizontal pada layar kecil */}
-    <div className="w-full rounded-lg border border-blue-100/50 overflow-x-auto">
+    <div className="w-full min-w-0 rounded-lg border border-blue-100/50 overflow-x-auto">
       <Table className="min-w-[720px] md:min-w-full">
             <TableHeader className="bg-blue-50/50">
               <TableRow>
@@ -316,20 +315,18 @@ export function DudiTable({ onEdit, onDelete, onAdd }: DudiTableProps) {
 
         {/* Pagination */}
         {totalPages > 1 && (
-          <div className="flex items-center justify-between mt-4">
-            <div className="text-sm text-slate-600">
-              Menampilkan {((currentPage - 1) * pageSize) + 1} sampai {Math.min(currentPage * pageSize, filteredData.length)} dari {filteredData.length} entri
-            </div>
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 px-4 sm:px-0">
+            <div className="flex items-center gap-2 flex-wrap justify-center">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
+                className="flex-shrink-0"
               >
                 Sebelumnya
               </Button>
-              <span className="text-sm text-slate-600">
+              <span className="text-sm text-slate-600 whitespace-nowrap">
                 Halaman {currentPage} dari {totalPages}
               </span>
               <Button
@@ -337,6 +334,7 @@ export function DudiTable({ onEdit, onDelete, onAdd }: DudiTableProps) {
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
+                className="flex-shrink-0"
               >
                 Selanjutnya
               </Button>

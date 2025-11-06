@@ -321,13 +321,13 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
               <IconUser className="size-5 text-blue-600" />
               Daftar Siswa Magang
             </CardTitle>
-            <CardDescription>Kelola data siswa yang sedang melaksanakan magang di industri</CardDescription>
+            <CardDescription></CardDescription>
           </div>
           <div className="flex gap-2">
             {/* Tambah data magang baru */}
             <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={onAdd}>
               <IconPlus className="size-4 mr-2" />
-              Tambah Siswa
+              Siswa
             </Button>
             {/* Ekspor/print tampilan saat ini ke jendela baru (bisa dicetak ke PDF melalui dialog print browser) */}
             <Button
@@ -410,16 +410,16 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
           </div>
         </div>
       </CardHeader>
-      <CardContent>
-        <div className="flex flex-col sm:flex-row gap-4 mb-6">
-          <div className="relative flex-1">
+      <CardContent className="p-4 sm:p-6">
+        <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mb-6 min-w-0">
+          <div className="relative flex-1 min-w-0">
             <IconSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 size-4" />
             {/* Input pencarian multi-kolom */}
             <Input
               placeholder="Cari siswa, NIS, kelas, jurusan, DUDI..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="pl-10"
+              className="pl-10 w-full min-w-0"
             />
           </div>
           <div className="flex gap-2">
@@ -450,7 +450,7 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
           </div>
         </div>
 
-        <div className="rounded-lg border border-blue-100/50 overflow-hidden">
+        <div className="rounded-lg border border-blue-100/50 overflow-x-auto min-w-0">
           <Table>
             <TableHeader>
               <TableRow className="bg-blue-50/50">
@@ -476,27 +476,27 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
                 // Render baris data
                 paginatedData.map((item) => (
                   <TableRow key={item.id} className="hover:bg-blue-50/30">
-                    <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="bg-blue-500/15 text-blue-600 ring-1 ring-blue-200/60 flex size-8 items-center justify-center rounded-lg">
+                    <TableCell className="min-w-0">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <div className="bg-blue-500/15 text-blue-600 ring-1 ring-blue-200/60 flex size-8 items-center justify-center rounded-lg flex-shrink-0">
                           <IconUser className="size-4" />
                         </div>
-                        <div>
-                          <div className="font-medium text-slate-900">{item.nama_siswa}</div>
+                        <div className="min-w-0 flex-1">
+                          <div className="font-medium text-slate-900 break-words">{item.nama_siswa}</div>
                           {item.nis && (
-                            <div className="text-sm text-slate-500">NIS: {item.nis}</div>
+                            <div className="text-sm text-slate-500 break-words">NIS: {item.nis}</div>
                           )}
                         </div>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div>
-                        <div className="font-medium text-slate-900">{item.kelas || "-"}</div>
-                        <div className="text-sm text-slate-500">{item.jurusan || "-"}</div>
+                    <TableCell className="min-w-0">
+                      <div className="min-w-0">
+                        <div className="font-medium text-slate-900 break-words">{item.kelas || "-"}</div>
+                        <div className="text-sm text-slate-500 break-words">{item.jurusan || "-"}</div>
                       </div>
                     </TableCell>
-                    <TableCell>
-                      <div className="font-medium text-slate-900">{item.nama_dudi || "-"}</div>
+                    <TableCell className="min-w-0">
+                      <div className="font-medium text-slate-900 break-words">{item.nama_dudi || "-"}</div>
                     </TableCell>
                     <TableCell>
                       <div className="text-sm">
@@ -576,20 +576,18 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
         </div>
 
         {totalPages > 1 && (
-          <div className="flex items-center justify-between mt-4">
-            <div className="text-sm text-slate-600">
-              Menampilkan {((currentPage - 1) * pageSize) + 1} - {Math.min(currentPage * pageSize, filteredData.length)} dari {filteredData.length} data
-            </div>
-            <div className="flex gap-2">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 mt-4 px-4 sm:px-0">
+            <div className="flex items-center gap-2 flex-wrap justify-center">
               <Button
                 size="sm"
                 variant="outline"
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
+                className="flex-shrink-0"
               >
                 Sebelumnya
               </Button>
-              <span className="flex items-center px-3 text-sm">
+              <span className="flex items-center px-3 text-sm text-slate-600 whitespace-nowrap">
                 Halaman {currentPage} dari {totalPages}
               </span>
               <Button
@@ -597,6 +595,7 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
                 variant="outline"
                 onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                 disabled={currentPage === totalPages}
+                className="flex-shrink-0"
               >
                 Selanjutnya
               </Button>
