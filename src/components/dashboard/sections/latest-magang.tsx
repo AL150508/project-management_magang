@@ -174,15 +174,15 @@ export function SectionLatestMagang({ items, compact = false, minHeightClass }: 
   return (
     <section className="px-2 sm:px-4 lg:px-6">
       <div className="rounded-xl border border-blue-100/60 bg-white shadow-sm backdrop-blur">
-        <header className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
-          <div className="flex items-center gap-2">
+        <header className="flex items-center justify-between px-4 py-3 border-b border-slate-100 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
             <div className="bg-sky-500/15 text-sky-700 ring-1 ring-sky-200/60 flex size-7 items-center justify-center rounded-lg">
               <IconSchool className="size-3.5" />
             </div>
-            <h3 className="text-sm font-semibold">Magang Terbaru</h3>
+            <h3 className="text-sm font-semibold truncate max-w-[140px] sm:max-w-none">Magang Terbaru</h3>
           </div>
           {totalPages > 1 && (
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-1 whitespace-nowrap">
               <button
                 onClick={() => goToPage(currentPage - 1)}
                 disabled={currentPage === 1}
@@ -214,9 +214,9 @@ export function SectionLatestMagang({ items, compact = false, minHeightClass }: 
               <li key={item.id} className="px-4 py-3">
                 <div className="flex items-start justify-between gap-3 min-w-0">
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-xs break-words">{item.studentName}</p>
-                    <p className="text-muted-foreground text-xs break-words mt-0.5">{item.companyName}</p>
-                    <p className="text-muted-foreground mt-1 flex items-center gap-1 text-xs">
+                    <p className="font-medium text-xs truncate" title={item.studentName}>{item.studentName}</p>
+                    <p className="text-muted-foreground text-xs truncate mt-0.5" title={item.companyName}>{item.companyName}</p>
+                    <p className="text-muted-foreground mt-1 flex items-center gap-1 text-xs" >
                       <IconCalendar className="size-3 flex-shrink-0" />
                       <span className="text-xs">{item.startDate} - {item.endDate}</span>
                     </p>

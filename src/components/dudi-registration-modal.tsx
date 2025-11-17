@@ -217,8 +217,6 @@ export function DudiRegistrationModal({
     }))
   }
 
-  if (!dudi) return null
-
   React.useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "Escape") {
@@ -231,6 +229,8 @@ export function DudiRegistrationModal({
       return () => window.removeEventListener("keydown", onKeyDown)
     }
   }, [open, onOpenChange])
+
+  if (!dudi) return null
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -406,7 +406,7 @@ export function DudiRegistrationModal({
             </Button>
             <Button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
+              className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
               disabled={loading}
             >
               {loading ? "Mendaftar..." : "Daftar Magang"}
