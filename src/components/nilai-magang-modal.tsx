@@ -14,7 +14,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog"
 import { IconStar, IconUser, IconBuilding } from "@tabler/icons-react"
-import { toast } from "sonner"
+import { showSuccess, showError } from "@/lib & database connection/utils"
 
 interface NilaiMagangModalProps {
   open: boolean
@@ -139,8 +139,8 @@ export function NilaiMagangModal({
                   value={nilai}
                   onChange={(e) => setNilai(e.target.value)}
                   placeholder="Masukkan nilai (0-100)"
-                  required
                   disabled={loading}
+                  required
                 />
                 <p className="text-xs text-gray-500">
                   Nilai saat ini: {magangData.nilaiAkhir ? `${magangData.nilaiAkhir}` : "Belum dinilai"}

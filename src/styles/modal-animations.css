@@ -1,0 +1,269 @@
+/* Simple Modal Styles - No Complex Animations */
+
+/* Basic Shadow */
+.modal-shadow {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Override Dialog Overlay - White Background */
+[data-radix-dialog-overlay] {
+  background: rgba(255, 255, 255, 0.95) !important;
+}
+
+.fixed.inset-0.z-50.bg-black\/80 {
+  background: rgba(255, 255, 255, 0.95) !important;
+}
+
+/* Perfect centering with flexbox */
+[data-radix-dialog-overlay] {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 1rem !important;
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 50 !important;
+}
+
+/* Simple dialog positioning */
+[data-radix-dialog-content] {
+  position: relative !important;
+  width: 100% !important;
+  max-width: 28rem !important;
+  max-height: 90vh !important;
+  margin: 0 !important;
+}
+
+/* Modal container with scroll */
+.modal-stable-center {
+  width: 100% !important;
+  max-width: 28rem !important;
+  max-height: 85vh !important;
+  overflow-y: auto !important;
+}
+
+/* Responsive */
+@media (max-width: 640px) {
+  [data-radix-dialog-content],
+  .modal-stable-center {
+    max-width: calc(100vw - 2rem) !important;
+  }
+}
+
+/* Center alignment */
+.fixed.inset-0.z-50 {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 1rem !important;
+}
+
+/* Branding Style - Blue and larger */
+.modal-branding {
+  color: #2563eb;
+  font-weight: 600;
+  font-size: 1rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+/* Custom scrollbar for modal */
+.modal-stable-center::-webkit-scrollbar {
+  width: 6px;
+}
+
+.modal-stable-center::-webkit-scrollbar-track {
+  background: #f1f5f9;
+  border-radius: 3px;
+}
+
+.modal-stable-center::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.modal-stable-center::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* ===== MAP Z-INDEX FIX ===== */
+
+/* Fix map overlay issue with modals */
+.leaflet-container {
+  z-index: 1 !important;
+}
+
+.leaflet-control-container {
+  z-index: 2 !important;
+}
+
+/* Ensure modals are always on top */
+[data-radix-dialog-overlay] {
+  z-index: 9999 !important;
+}
+
+[data-radix-dialog-content] {
+  z-index: 10000 !important;
+}
+
+
+/* ===== RESPONSIVE IMPROVEMENTS ===== */
+
+/* Mobile First Approach */
+@media (max-width: 640px) {
+  /* Modal Responsiveness */
+  [data-radix-dialog-content] {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    margin: 0.5rem !important;
+    max-height: 90vh !important;
+  }
+  
+  .modal-stable-center {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    max-height: 85vh !important;
+  }
+  
+  /* Form improvements for mobile */
+  .grid.grid-cols-2 {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+  
+  .grid.grid-cols-1.md\:grid-cols-2,
+  .grid.grid-cols-1.sm\:grid-cols-2 {
+    grid-template-columns: 1fr !important;
+    gap: 0.75rem !important;
+  }
+  
+  /* Button improvements for mobile */
+  .flex.flex-col.sm\:flex-row button,
+  .flex.flex-row.gap-2 button {
+    width: 100% !important;
+    margin-bottom: 0.5rem !important;
+  }
+  
+  /* Input font size to prevent zoom on iOS */
+  input, textarea, select {
+    font-size: 16px !important;
+  }
+  
+  /* Header mobile improvements */
+  header {
+    padding: 0.5rem 0.75rem !important;
+    gap: 0.5rem !important;
+  }
+  
+  /* Role switcher mobile */
+  .flex.items-center.gap-1 {
+    gap: 0.25rem !important;
+    padding: 0.25rem !important;
+  }
+  
+  /* Map container mobile */
+  .h-\[280px\].md\:h-\[320px\].lg\:h-\[380px\] {
+    height: 250px !important;
+  }
+}
+
+/* Tablet Styles */
+@media (min-width: 641px) and (max-width: 1024px) {
+  [data-radix-dialog-content] {
+    width: 90vw !important;
+    max-width: 600px !important;
+  }
+  
+  .modal-stable-center {
+    width: 90vw !important;
+    max-width: 600px !important;
+  }
+  
+  /* Grid for tablet */
+  .grid.grid-cols-1.sm\:grid-cols-2 {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  
+  /* Map container tablet */
+  .h-\[280px\].md\:h-\[320px\].lg\:h-\[380px\] {
+    height: 320px !important;
+  }
+}
+
+/* Desktop Styles */
+@media (min-width: 1025px) {
+  /* Button layout desktop */
+  .flex.flex-col.sm\:flex-row {
+    flex-direction: row !important;
+    justify-content: flex-end !important;
+  }
+  
+  .flex.flex-col.sm\:flex-row button {
+    width: auto !important;
+    margin-bottom: 0 !important;
+  }
+  
+  /* Map container desktop */
+  .h-\[280px\].md\:h-\[320px\].lg\:h-\[380px\] {
+    height: 380px !important;
+  }
+}
+
+/* Landscape Mobile */
+@media (max-width: 640px) and (orientation: landscape) {
+  [data-radix-dialog-content],
+  .modal-stable-center {
+    max-height: 80vh !important;
+  }
+  
+  .h-\[280px\].md\:h-\[320px\].lg\:h-\[380px\] {
+    height: 200px !important;
+  }
+}
+
+/* iOS Safari specific fixes */
+@supports (-webkit-touch-callout: none) {
+  [data-radix-dialog-content],
+  .modal-stable-center {
+    max-height: 85vh !important;
+  }
+  
+  /* Prevent zoom on focus */
+  input[type="text"],
+  input[type="email"],
+  input[type="tel"],
+  input[type="number"],
+  textarea,
+  select {
+    font-size: 16px !important;
+  }
+}
+
+/* High DPI displays */
+@media (-webkit-min-device-pixel-ratio: 2), (min-resolution: 192dpi) {
+  .modal-shadow {
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  }
+}
+
+/* Reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Print styles */
+@media print {
+  [data-radix-dialog-overlay] {
+    display: none !important;
+  }
+  
+  [data-radix-dialog-content] {
+    position: static !important;
+    box-shadow: none !important;
+    border: 1px solid #000 !important;
+  }
+}

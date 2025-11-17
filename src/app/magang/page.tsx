@@ -4,8 +4,13 @@ import * as React from "react"
 import { useRole } from "@/context/role-context"
 import { TeacherHeader, TeacherSidebar, MagangTable, MagangItem, MagangModal } from "@/components/guru"
 import { StudentHeader, StudentSidebar, StatusMagangSiswa } from "@/components/siswa"
+import { SemuaStudentsMagang } from "@/components/semua-students-magang"
 import { SectionMagangCards } from "@/components/dashboard/sections"
 import { NilaiMagangModal } from "@/components/nilai-magang-modal"
+import dynamic from "next/dynamic"
+
+// Import langsung karena sudah "use client"
+import { DudiMapViewer } from "@/components/dudi/dudi-map-viewer"
 
 // Halaman utama untuk manajemen data siswa magang
 // Menampilkan tampilan berbeda untuk guru (admin) dan siswa
@@ -96,18 +101,17 @@ export default function MagangPage() {
   if (role === "guru") {
     // Tampilan untuk Guru/Admin - dengan tabel manajemen lengkap
     return (
-      <div className="flex flex-col min-h-[100dvh] min-w-0 bg-gray-50 transition-all duration-300 ease-in-out">
-        <TeacherHeader 
-          userName={userName}
-          userRole={role}
-          onRoleChange={handleRoleChange}
+      <div className="flex min-h-screen bg-gray-50">
+        <TeacherSidebar 
+          activeItem={activeItem}
+          onItemClick={handleItemClick}
         />
-        <div className="flex flex-1 min-w-0">
-          <TeacherSidebar 
-            activeItem={activeItem}
-            onItemClick={handleItemClick}
+        <div className="flex-1 flex flex-col min-w-0">
+          <TeacherHeader 
+            userRole={role}
+            onRoleChange={handleRoleChange}
           />
-          <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-4">
+          <main className="flex-1 px-4 sm:px-6 lg:px-8 py-4">
               {/* Header Section */}
             <div className="mb-6">
               <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">
@@ -119,6 +123,9 @@ export default function MagangPage() {
               </div>
               
             <div className="flex flex-col gap-4 md:gap-6">
+                  {/* Peta Lokasi DUDI */}
+                  <DudiMapViewer />
+                  
                   {/* Stats Cards - menampilkan statistik magang */}
                   <SectionMagangCards />
 
@@ -147,7 +154,7 @@ export default function MagangPage() {
           onOpenChange={setNilaiModalOpen}
           magangData={selectedNilaiMagang ? {
             id: selectedNilaiMagang.id,
-            namaSiswa: selectedNilaiMagang.nama_siswa,
+            namaSiswa: selectedNilaiMagang.Siswa || selectedNilaiMagang.nama_siswa,
             namaPerusahaan: selectedNilaiMagang.nama_dudi || "",
             periodeMulai: selectedNilaiMagang.periode_mulai || "",
             periodeSelesai: selectedNilaiMagang.periode_selesai || "",
@@ -161,19 +168,18 @@ export default function MagangPage() {
 
   // Tampilan untuk Siswa - hanya status magang mereka
   return (
-    <div className="flex flex-col min-h-[100dvh] min-w-0 bg-gray-50 transition-all duration-300 ease-in-out">
-      <StudentHeader 
-        userName={userName}
-        userRole={role}
-        onRoleChange={handleRoleChange}
+    <div className="flex min-h-screen bg-gray-50">
+      <StudentSidebar 
+        activeItem={activeItem}
+        onItemClick={handleItemClick}
       />
-      <div className="flex flex-1 min-w-0">
-        <StudentSidebar 
-          activeItem={activeItem}
-          onItemClick={handleItemClick}
+      <div className="flex-1 flex flex-col min-w-0">
+        <StudentHeader 
+          userRole={role}
+          onRoleChange={handleRoleChange}
         />
-        <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-4">
-            <StatusMagangSiswa studentName={userName} />
+        <main className="flex-1 px-4 sm:px-6 lg:px-8 py-4">
+            <SemuaStudentsMagang />
         </main>
       </div>
     </div>

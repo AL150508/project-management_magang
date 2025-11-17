@@ -32,6 +32,8 @@ export type DudiItem = {
   email?: string
   penanggung_jawab?: string
   jumlah_siswa?: number
+  latitude?: number
+  longitude?: number
   created_at?: string
   updated_at?: string
 }

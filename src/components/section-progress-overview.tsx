@@ -77,61 +77,69 @@ export function SectionProgressOverview({
 
   if (loading) {
     return (
-      <Card className="rounded-2xl border border-blue-100/70 bg-white/70 shadow-lg backdrop-blur">
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-blue-900">
-            <IconChartBar className="size-5 text-blue-600" />
-            Progress Overview
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div className="text-center py-8">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
-            <p className="text-sm text-gray-600">Memuat data...</p>
+      <section className="px-2 sm:px-4 lg:px-6">
+        <div className="rounded-xl border border-blue-100/60 bg-white shadow-sm backdrop-blur">
+          <header className="flex items-center gap-2 px-4 py-3 border-b border-slate-100">
+            <div className="bg-blue-500/15 text-blue-700 ring-1 ring-blue-200/60 flex size-7 items-center justify-center rounded-lg">
+              <IconChartBar className="size-3.5" />
+            </div>
+            <h3 className="text-sm font-semibold">Progress Overview</h3>
+          </header>
+          
+          <div className="p-3">
+            <div className="text-center py-4">
+              <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mx-auto mb-2"></div>
+              <p className="text-xs text-gray-600">Memuat data...</p>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </section>
     )
   }
 
   return (
-    <Card className="rounded-2xl border border-blue-100/70 bg-white/70 shadow-md backdrop-blur">
-        <CardHeader className="pb-2">
-          <CardTitle className="flex items-center gap-2 text-blue-900">
-            <IconChartBar className="size-5 text-blue-600" />
-            Progress Overview
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-6">
-          <div>
-            <div className="flex items-center justify-between text-sm text-slate-700">
-              <span>Siswa Aktif Magang</span>
-              <span className="font-semibold text-blue-900">{a}%</span>
-            </div>
-            <div className="mt-2 h-2 rounded-full bg-blue-100">
-              <div
-                className="h-2 rounded-full bg-blue-600"
-                style={{ width: `${a}%` }}
-                aria-label="Siswa aktif magang"
-              />
-            </div>
+    <section className="px-2 sm:px-4 lg:px-6">
+      <div className="rounded-xl border border-blue-100/60 bg-white shadow-sm backdrop-blur">
+        <header className="flex items-center gap-2 px-4 py-3 border-b border-slate-100">
+          <div className="bg-blue-500/15 text-blue-700 ring-1 ring-blue-200/60 flex size-7 items-center justify-center rounded-lg">
+            <IconChartBar className="size-3.5" />
           </div>
+          <h3 className="text-sm font-semibold">Progress Overview</h3>
+        </header>
+        
+        <div className="p-3">
+          <div className="space-y-3">
+            <div>
+              <div className="flex items-center justify-between text-xs text-slate-700 mb-2">
+                <span>Siswa Aktif Magang</span>
+                <span className="font-semibold text-blue-900">{a}%</span>
+              </div>
+              <div className="h-2 rounded-full bg-blue-100">
+                <div
+                  className="h-2 rounded-full bg-blue-600 transition-all duration-300"
+                  style={{ width: `${a}%` }}
+                  aria-label="Siswa aktif magang"
+                />
+              </div>
+            </div>
 
-          <div>
-            <div className="flex items-center justify-between text-sm text-slate-700">
-              <span>Logbook Hari Ini</span>
-              <span className="font-semibold text-blue-900">{l}%</span>
-            </div>
-            <div className="mt-2 h-2 rounded-full bg-blue-100">
-              <div
-                className="h-2 rounded-full bg-cyan-600"
-                style={{ width: `${l}%` }}
-                aria-label="Logbook hari ini"
-              />
+            <div>
+              <div className="flex items-center justify-between text-xs text-slate-700 mb-2">
+                <span>Logbook Hari Ini</span>
+                <span className="font-semibold text-blue-900">{l}%</span>
+              </div>
+              <div className="h-2 rounded-full bg-blue-100">
+                <div
+                  className="h-2 rounded-full bg-cyan-600 transition-all duration-300"
+                  style={{ width: `${l}%` }}
+                  aria-label="Logbook hari ini"
+                />
+              </div>
             </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
+    </section>
   )
 }
 

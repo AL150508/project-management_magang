@@ -17,10 +17,7 @@ export default function Page() {
   // State untuk cek apakah komponen sudah ter-mount (untuk mencegah error hydration)
   const [mounted, setMounted] = React.useState(false)
 
-  // UBAH DI SINI: Nama user yang tampil di header, bisa diganti sesuai role
-  const userName = React.useMemo(() => {
-    return role === "guru" ? "Guru Admin" : "Alvasya" // UBAH DI SINI: Nama default user
-  }, [role])
+  // userName tidak digunakan lagi karena profile sudah dipindah ke sidebar
 
   // Menandai komponen sudah ter-mount
   React.useEffect(() => {
@@ -55,18 +52,17 @@ export default function Page() {
   }
 
   return (
-    <div className="flex flex-col min-h-[100dvh] min-w-0 bg-gray-50 transition-all duration-300 ease-in-out">
-      <TeacherHeader 
-        userName={userName}
-        userRole={role}
-        onRoleChange={handleRoleChange}
+    <div className="flex min-h-screen bg-gray-50">
+      <TeacherSidebar 
+        activeItem={activeItem}
+        onItemClick={handleItemClick}
       />
-      <div className="flex flex-1 min-w-0">
-        <TeacherSidebar 
-          activeItem={activeItem}
-          onItemClick={handleItemClick}
+      <div className="flex-1 flex flex-col min-w-0">
+        <TeacherHeader 
+          userRole={role}
+          onRoleChange={handleRoleChange}
         />
-        <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-4">
+        <main className="flex-1 px-4 sm:px-6 lg:px-8 py-4">
           {/* Dashboard Header */}
           <div className="mb-6">
             <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">
@@ -86,13 +82,7 @@ export default function Page() {
                     </div>
               <div className="flex flex-col gap-4 md:gap-6">
                       <SectionProgressOverview />
-                      <SectionDudiAktif
-                        items={[
-                          { id: 1, name: "PT. Teknologi Nusantara", industry: "Teknologi Informasi", address: "Jl. HR Muhammad No. 123, Surabaya", phone: "031-5551234", count: 8 },
-                          { id: 2, name: "CV. Digital Kreativa", industry: "Digital Marketing", address: "Jl. Pemuda No. 45, Surabaya", phone: "031-5557890", count: 5 },
-                          { id: 3, name: "PT. Inovasi Mandiri", industry: "Konsultan IT", address: "Jl. Diponegoro No. 78, Surabaya", phone: "031-5553456", count: 12 },
-                        ]}
-                      />
+                      <SectionDudiAktif />
                     </div>
                   </div>
                 </div>

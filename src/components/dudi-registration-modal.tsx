@@ -14,7 +14,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
 import { IconBuilding } from "@tabler/icons-react"
-import { toast } from "sonner"
+import { showSuccess, showError } from "@/lib & database connection/utils"
 import { supabaseBrowser } from "@/lib & database connection/supabase-browser"
 import { DudiItem } from "./dudi-cards"
 
@@ -76,7 +76,7 @@ export function DudiRegistrationModal({
       console.log("📝 Form data yang diterima:", formData)
       console.log("🏢 DUDI yang dipilih:", dudi)
       
-      toast.loading("Mendaftarkan ke magang...", { id: "register-modal" })
+      // Loading state sudah dihandle oleh setLoading(true)
       
       // Validate form data
       if (!formData.nama || !formData.email || !formData.telepon || !formData.motivasi) {
@@ -85,7 +85,7 @@ export function DudiRegistrationModal({
         console.log("- Email:", formData.email)
         console.log("- Telepon:", formData.telepon)
         console.log("- Motivasi:", formData.motivasi)
-        toast.error("Mohon lengkapi semua field yang wajib diisi", { id: "register-modal" })
+        showError("Mohon lengkapi semua field yang wajib diisi")
         return
       }
       
@@ -93,7 +93,7 @@ export function DudiRegistrationModal({
 
       // Save directly to magang table (opsi 1)
       if (!supabaseBrowser) {
-        toast.error("Database tidak tersedia", { id: "register-modal" })
+        showError("Database tidak tersedia")
         return
       }
 
@@ -104,7 +104,7 @@ export function DudiRegistrationModal({
         .limit(1)
 
       if (checkError && checkError.code === 'PGRST116') {
-        toast.error("Tabel magang_guru belum dibuat. Silakan jalankan SQL setup terlebih dahulu.", { id: "register-modal" })
+        showError("Tabel magang_guru belum dibuat. Silakan jalankan SQL setup terlebih dahulu.")
         return
       }
 
@@ -113,20 +113,14 @@ export function DudiRegistrationModal({
       const { data: { user } } = await supabaseBrowser.auth.getUser()
       console.log("👤 User data:", user)
       
-      // Fallback: jika tidak ada user ID, gunakan nama siswa sebagai identifier
-      let userId = user?.id
-      if (!userId) {
-        console.log("⚠️ User tidak terautentikasi, menggunakan nama siswa sebagai fallback")
-        userId = formData.nama?.trim() || "Siswa"
+      // Gunakan nama siswa sebagai identifier, bukan UUID
+      let studentName = formData.nama?.trim() || user?.fullName || "Siswa"
+      if (!studentName || studentName === "null" || studentName === "undefined") {
+        console.log("⚠️ Nama siswa kosong, menggunakan fallback")
+        studentName = "Siswa_" + Date.now()
       }
       
-      // Pastikan userId tidak null atau undefined
-      if (!userId || userId === "null" || userId === "undefined") {
-        console.error("❌ UserId masih null/undefined, menggunakan fallback hardcoded")
-        userId = "Siswa_" + Date.now() // Fallback dengan timestamp
-      }
-      
-      console.log("✅ User ID/Identifier:", userId)
+      console.log("✅ Student Name:", studentName)
 
       // Validasi data yang diperlukan
       console.log("📝 Form data:", formData)
@@ -138,22 +132,22 @@ export function DudiRegistrationModal({
       const namaPerusahaan = dudi.nama_perusahaan?.trim() || "Perusahaan"
       
       console.log("🔧 Data yang akan di-insert:")
-      console.log("- UserId:", userId)
+      console.log("- Student Name:", studentName)
       console.log("- NIS:", nisSiswa)
       console.log("- Kelas:", kelasSiswa)
       console.log("- Jurusan:", jurusanSiswa)
       console.log("- Nama Perusahaan:", namaPerusahaan)
       
       // Validasi final - pastikan tidak ada yang null
-      if (!userId || userId === "null" || userId === "undefined") {
-        console.error("❌ UserId masih null setelah validasi")
-        toast.error("Terjadi kesalahan dalam validasi data", { id: "register-modal" })
+      if (!studentName || studentName === "null" || studentName === "undefined") {
+        console.error("❌ Student name masih null setelah validasi")
+        showError("Terjadi kesalahan dalam validasi data")
         return
       }
 
       // Payload utama: kolom kapital sesuai pembacaan tabel Magang
       const payloadCaps = {
-        Siswa: userId,
+        Siswa: studentName,
         NIS: nisSiswa || null,
         Kelas: kelasSiswa || null,
         Jurusan: jurusanSiswa || null,
@@ -165,7 +159,7 @@ export function DudiRegistrationModal({
 
       // Fallback snake_case jika gagal karena kolom tidak cocok
       const payloadSnake = {
-        nama_siswa: userId,
+        nama_siswa: studentName,
         nis: nisSiswa || null,
         kelas: kelasSiswa || null,
         jurusan: jurusanSiswa || null,
@@ -190,19 +184,19 @@ export function DudiRegistrationModal({
           console.log("❌ Insert payloadSnake juga gagal:", secondTry.error)
           const errorObj = secondTry.error as { code?: string; message?: string }
           if (errorObj?.code === '23505') {
-            toast.error("Data sudah terdaftar untuk pendaftaran ini", { id: "register-modal" })
+            showError("Data sudah terdaftar untuk pendaftaran ini")
           } else if (errorObj?.code === '23502') {
-            toast.error("Data tidak lengkap. Mohon periksa kembali form", { id: "register-modal" })
+            showError("Data tidak lengkap. Mohon periksa kembali form")
           } else if (errorObj?.code === 'PGRST116' || errorObj?.code === 'PGRST205') {
-            toast.error("Tabel magang belum dibuat. Silakan jalankan SQL setup terlebih dahulu.", { id: "register-modal" })
+            showError("Tabel magang belum dibuat. Silakan jalankan SQL setup terlebih dahulu.")
           } else {
-            toast.error(`Gagal menyimpan pendaftaran: ${errorObj?.message || 'Unknown error'}`, { id: "register-modal" })
+            showError("Gagal menyimpan pendaftaran", errorObj?.message || 'Unknown error')
           }
           return
         }
       }
       
-      toast.success(`Pendaftaran berhasil! Menunggu persetujuan guru untuk ${dudi.nama_perusahaan}`, { id: "register-modal" })
+      showSuccess(`Pendaftaran berhasil! Menunggu persetujuan guru untuk ${dudi.nama_perusahaan}`)
       
       // Close modal and call success callback
       onOpenChange(false)
@@ -210,7 +204,7 @@ export function DudiRegistrationModal({
       
     } catch (error) {
       console.error("Registration error:", error)
-      toast.error("Gagal mendaftar magang", { id: "register-modal" })
+      showError("Gagal mendaftar magang")
     } finally {
       setLoading(false)
     }
@@ -225,9 +219,22 @@ export function DudiRegistrationModal({
 
   if (!dudi) return null
 
+  React.useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.preventDefault()
+        onOpenChange(false)
+      }
+    }
+    if (open) {
+      window.addEventListener("keydown", onKeyDown)
+      return () => window.removeEventListener("keydown", onKeyDown)
+    }
+  }, [open, onOpenChange])
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="w-[95vw] max-w-[500px] max-h-[90vh] overflow-y-auto mx-auto bg-white/10 backdrop-blur-xl border border-white/20 shadow-2xl">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
             <IconBuilding className="h-5 w-5 text-blue-600" />
@@ -324,15 +331,16 @@ export function DudiRegistrationModal({
                 />
               </div>
               
-              <div className="space-y-2">
-                <Label htmlFor="alamat">Alamat</Label>
-                <Input
-                  id="alamat"
-                  value={formData.alamat}
-                  onChange={(e) => handleInputChange("alamat", e.target.value)}
-                  placeholder="Alamat tempat tinggal"
-                />
-              </div>
+            </div>
+            
+            <div className="space-y-2">
+              <Label htmlFor="alamat">Alamat</Label>
+              <Input
+                id="alamat"
+                value={formData.alamat}
+                onChange={(e) => handleInputChange("alamat", e.target.value)}
+                placeholder="Alamat tempat tinggal"
+              />
             </div>
           </div>
 
@@ -386,18 +394,19 @@ export function DudiRegistrationModal({
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={loading}
+              className="w-full sm:w-auto"
             >
               Batal
             </Button>
             <Button
               type="submit"
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 w-full sm:w-auto"
               disabled={loading}
             >
               {loading ? "Mendaftar..." : "Daftar Magang"}

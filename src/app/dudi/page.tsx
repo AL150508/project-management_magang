@@ -4,11 +4,17 @@ import * as React from "react"
 import { useRole } from "@/context/role-context"
 import { HeaderSiswa, SidebarSiswa } from "@/components/siswa"
 import { HeaderGuru, SidebarGuru } from "@/components/guru"
-import { DudiSearch, DudiCards, DudiTable } from "@/components/dudi"
+import { DudiSearch } from "@/components/dudi-search"
+import { DudiCards } from "@/components/dudi-cards"
+import { DudiTable } from "@/components/dudi-table"
 import type { DudiItem } from "@/components/dudi-table"
 import { DudiModal } from "@/components/dudi-modal"
 import { toast } from "sonner"
 import { supabaseBrowser } from "@/lib & database connection/supabase-browser"
+import dynamic from "next/dynamic"
+
+// Import langsung karena sudah "use client"
+import { DudiMapViewer } from "@/components/dudi/dudi-map-viewer"
 
 export default function DudiPage() {
   const { role, setRole } = useRole()
@@ -18,9 +24,7 @@ export default function DudiPage() {
   const [selectedDudi, setSelectedDudi] = React.useState<DudiItem | null>(null)
   const [refreshKey, setRefreshKey] = React.useState(0)
 
-  const userName = React.useMemo(() => {
-    return role === "guru" ? "Guru Pembimbing" : "Alvasya"
-  }, [role])
+  // Removed unused userName variable
 
   React.useEffect(() => {
     setMounted(true)
@@ -54,31 +58,44 @@ export default function DudiPage() {
   }
 
   const handleDelete = async (id: string | number) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus data DUDI ini?")) return
-    
-    try {
-      if (!supabaseBrowser) {
-        toast.error("Konfigurasi database tidak lengkap")
-        return
-      }
-      
-      const { error } = await supabaseBrowser
-        .from("dudi")
-        .delete()
-        .eq("id", id)
-      
-      if (error) {
-        console.error("Error deleting DUDI:", error)
-        toast.error("Gagal menghapus data DUDI")
-        return
-      }
-      
-      toast.success("Data DUDI berhasil dihapus")
-      setRefreshKey((k) => k + 1)
-    } catch (error) {
-      console.error("Error deleting DUDI:", error)
-      toast.error("Terjadi kesalahan saat menghapus data")
-    }
+    // Tampilkan toast konfirmasi dengan action buttons
+    toast("Apakah Anda yakin ingin menghapus data DUDI ini?", {
+      action: {
+        label: "Hapus",
+        onClick: async () => {
+          try {
+            if (!supabaseBrowser) {
+              toast.error("Konfigurasi database tidak lengkap")
+              return
+            }
+            
+            const { error } = await supabaseBrowser
+              .from("dudi")
+              .delete()
+              .eq("id", id)
+            
+            if (error) {
+              console.error("Error deleting DUDI:", error)
+              toast.error("Gagal menghapus data DUDI")
+              return
+            }
+            
+            toast.success("Data DUDI berhasil dihapus")
+            setRefreshKey((k) => k + 1)
+          } catch (error) {
+            console.error("Error deleting DUDI:", error)
+            toast.error("Terjadi kesalahan saat menghapus data")
+          }
+        }
+      },
+      cancel: {
+        label: "Batal",
+        onClick: () => {
+          toast.info("Penghapusan dibatalkan")
+        }
+      },
+      duration: 5000
+    })
   }
 
   const handleModalSuccess = () => {
@@ -98,18 +115,17 @@ export default function DudiPage() {
 
   if (role === "guru") {
     return (
-      <div className="flex flex-col min-h-[100dvh] min-w-0 bg-gray-50 transition-all duration-300 ease-in-out">
-        <HeaderGuru 
-          userName={userName}
-          userRole={role}
-          onRoleChange={handleRoleChange}
+      <div className="flex min-h-screen bg-gray-50">
+        <SidebarGuru 
+          activeItem={activeItem}
+          onItemClick={handleItemClick}
         />
-        <div className="flex flex-1 min-w-0">
-          <SidebarGuru 
-            activeItem={activeItem}
-            onItemClick={handleItemClick}
+        <div className="flex-1 flex flex-col min-w-0">
+          <HeaderGuru 
+            userRole={role}
+            onRoleChange={handleRoleChange}
           />
-          <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-4">
+          <main className="flex-1 px-4 sm:px-6 lg:px-8 py-4">
             {/* Header Section */}
             <div className="mb-6">
               <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">
@@ -142,18 +158,17 @@ export default function DudiPage() {
   }
 
   return (
-    <div className="flex flex-col min-h-[100dvh] min-w-0 bg-gray-50 transition-all duration-300 ease-in-out">
-      <HeaderSiswa 
-        userName={userName}
-        userRole={role}
-        onRoleChange={handleRoleChange}
+    <div className="flex min-h-screen bg-gray-50">
+      <SidebarSiswa 
+        activeItem={activeItem}
+        onItemClick={handleItemClick}
       />
-      <div className="flex flex-1 min-w-0">
-        <SidebarSiswa 
-          activeItem={activeItem}
-          onItemClick={handleItemClick}
+      <div className="flex-1 flex flex-col min-w-0">
+        <HeaderSiswa 
+          userRole={role}
+          onRoleChange={handleRoleChange}
         />
-        <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-4">
+        <main className="flex-1 px-4 sm:px-6 lg:px-8 py-4">
           <div className="mb-6">
             <h1 className="text-3xl sm:text-4xl font-bold text-gray-900 mb-2">
                 Cari Tempat Magang
@@ -164,6 +179,9 @@ export default function DudiPage() {
             </div>
 
           <div className="flex flex-col gap-4 md:gap-6">
+            {/* Peta Lokasi DUDI */}
+            <DudiMapViewer />
+            
             <DudiSearch />
             <DudiCards />
           </div>

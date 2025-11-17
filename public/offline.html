@@ -201,15 +201,45 @@
   </div>
   
   <script>
+    // Fungsi untuk clear semua cache
+    async function clearAllCaches() {
+      try {
+        // Unregister service worker
+        if ('serviceWorker' in navigator) {
+          const registrations = await navigator.serviceWorker.getRegistrations();
+          for (const registration of registrations) {
+            await registration.unregister();
+            console.log('✅ Service worker unregistered');
+          }
+        }
+        
+        // Clear semua cache
+        if ('caches' in window) {
+          const cacheNames = await caches.keys();
+          await Promise.all(cacheNames.map(name => caches.delete(name)));
+          console.log('✅ All caches cleared');
+        }
+      } catch (error) {
+        console.warn('⚠️ Error clearing caches:', error);
+      }
+    }
+    
     // Cek status online saat halaman dimuat - jika online, langsung redirect
     (async function checkOnlineOnLoad() {
+      // Tunggu sebentar untuk memastikan halaman sudah fully loaded
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       // Cek navigator.onLine terlebih dahulu (cepat)
       if (navigator.onLine) {
         try {
-          // Verifikasi dengan fetch untuk memastikan benar-benar online
-          const response = await fetch('/', { 
+          // Verifikasi dengan fetch ke endpoint yang pasti ada
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 3000); // 3 detik timeout
+          
+          const response = await fetch(window.location.origin + '/', { 
             method: 'HEAD',
             cache: 'no-store',
+            signal: controller.signal,
             headers: {
               'Cache-Control': 'no-cache, no-store, must-revalidate',
               'Pragma': 'no-cache',
@@ -217,17 +247,22 @@
             }
           });
           
-          if (response.ok || response.status === 200 || response.status === 304) {
+          clearTimeout(timeoutId);
+          
+          if (response.ok) {
             console.log('✅ Online terdeteksi saat load, redirect ke halaman utama...');
-            // Redirect langsung tanpa unregister (biarkan service worker handle)
-            window.location.replace('/?bypass=true&t=' + Date.now());
+            // Clear semua cache dan redirect
+            await clearAllCaches();
+            window.location.replace('/?t=' + Date.now());
             return;
           }
         } catch (error) {
           // Masih offline, lanjutkan tampilkan offline page
-          console.log('❌ Masih offline saat load:', error);
+          console.log('❌ Masih offline saat load:', error.name, error.message);
         }
       }
+      
+      console.log('📱 Menampilkan halaman offline');
     })();
     
     // Fungsi untuk handle retry dengan bypass cache
@@ -241,9 +276,13 @@
       
       try {
         // Cek apakah benar-benar online dengan fetch ke server
-        const response = await fetch('/', { 
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 detik timeout
+        
+        const response = await fetch(window.location.origin + '/', { 
           method: 'HEAD',
           cache: 'no-store',
+          signal: controller.signal,
           headers: {
             'Cache-Control': 'no-cache, no-store, must-revalidate',
             'Pragma': 'no-cache',
@@ -251,47 +290,36 @@
           }
         });
         
-        if (response.ok || response.status === 200 || response.status === 304) {
-          // User benar-benar online, bypass service worker cache
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+          // User benar-benar online, clear cache dan redirect
           console.log('✅ Koneksi online terdeteksi, redirect ke halaman utama...');
+          button.textContent = 'Mengarahkan...';
           
-          // Unregister service worker jika ada untuk bypass cache
-          if ('serviceWorker' in navigator && navigator.serviceWorker.controller) {
-            try {
-              const registration = await navigator.serviceWorker.getRegistration();
-              if (registration) {
-                await registration.unregister();
-                console.log('✅ Service worker di-unregister untuk bypass cache');
-              }
-            } catch (swError) {
-              console.warn('⚠️ Gagal unregister service worker:', swError);
-            }
-          }
+          // Clear semua cache
+          await clearAllCaches();
           
-          // Clear cache dan redirect ke halaman utama dengan bypass
-          if ('caches' in window) {
-            try {
-              const cacheNames = await caches.keys();
-              await Promise.all(cacheNames.map(name => caches.delete(name)));
-              console.log('✅ Cache dibersihkan');
-            } catch (cacheError) {
-              console.warn('⚠️ Gagal clear cache:', cacheError);
-            }
-          }
-          
-          // Redirect ke halaman utama dengan bypass cache
-          window.location.href = '/?bypass=true&t=' + Date.now();
+          // Redirect ke halaman utama
+          window.location.replace('/?t=' + Date.now());
         } else {
-          throw new Error('Network response not OK');
+          throw new Error(`Network response: ${response.status}`);
         }
       } catch (error) {
         // Masih offline atau error
-        console.log('❌ Masih offline atau error:', error);
+        console.log('❌ Masih offline atau error:', error.name, error.message);
         button.textContent = originalText;
         button.disabled = false;
         
-        // Tampilkan pesan
+        // Hapus pesan error sebelumnya jika ada
+        const existingMessage = button.parentNode.querySelector('.error-message');
+        if (existingMessage) {
+          existingMessage.remove();
+        }
+        
+        // Tampilkan pesan error
         const message = document.createElement('p');
+        message.className = 'error-message';
         message.textContent = 'Masih tidak dapat terhubung. Pastikan koneksi internet Anda aktif.';
         message.style.color = '#ef4444';
         message.style.marginTop = '1rem';
@@ -311,94 +339,78 @@
     window.addEventListener('online', async function() {
       console.log('🌐 Event online terdeteksi, memeriksa koneksi...');
       
+      // Tunggu sebentar sebelum cek (kadang event online tidak akurat)
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
       try {
-        // Verifikasi dengan fetch
-        const response = await fetch('/', { 
+        // Verifikasi dengan fetch dengan timeout
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        
+        const response = await fetch(window.location.origin + '/', { 
           method: 'HEAD',
-          cache: 'no-store'
+          cache: 'no-store',
+          signal: controller.signal
         });
+        
+        clearTimeout(timeoutId);
         
         if (response.ok) {
           console.log('✅ Koneksi online dikonfirmasi, reload halaman...');
-          // Unregister service worker dan clear cache
-          if ('serviceWorker' in navigator) {
-            try {
-              const registration = await navigator.serviceWorker.getRegistration();
-              if (registration) {
-                await registration.unregister();
-              }
-            } catch (e) {
-              console.warn('Warning:', e);
-            }
-          }
-          
-          if ('caches' in window) {
-            try {
-              const cacheNames = await caches.keys();
-              await Promise.all(cacheNames.map(name => caches.delete(name)));
-            } catch (e) {
-              console.warn('Warning:', e);
-            }
-          }
-          
-          // Reload dengan bypass cache
-          window.location.href = '/?bypass=true&t=' + Date.now();
+          // Clear cache dan redirect
+          await clearAllCaches();
+          window.location.replace('/?t=' + Date.now());
         }
       } catch (error) {
-        console.log('❌ Masih offline:', error);
+        console.log('❌ Masih offline:', error.name, error.message);
       }
     });
     
-    // Auto-retry setiap 10 detik jika masih offline
+    // Auto-retry setiap 15 detik jika masih offline (lebih hemat resource)
     let retryCount = 0;
-    const maxRetries = 12; // 2 menit total
+    const maxRetries = 8; // 2 menit total (8 x 15 detik)
     
     const checkConnection = setInterval(async function() {
-      if (navigator.onLine) {
-        try {
-          const response = await fetch('/', { 
-            method: 'HEAD',
-            cache: 'no-store'
-          });
-          
-          if (response.ok) {
-            console.log('✅ Koneksi online terdeteksi, auto-reload...');
-            clearInterval(checkConnection);
-            
-            // Unregister dan clear cache
-            if ('serviceWorker' in navigator) {
-              try {
-                const registration = await navigator.serviceWorker.getRegistration();
-                if (registration) {
-                  await registration.unregister();
-                }
-              } catch (e) {}
-            }
-            
-            if ('caches' in window) {
-              try {
-                const cacheNames = await caches.keys();
-                await Promise.all(cacheNames.map(name => caches.delete(name)));
-              } catch (e) {}
-            }
-            
-            window.location.href = '/?bypass=true&t=' + Date.now();
-          }
-        } catch (error) {
-          // Masih offline
-          retryCount++;
-          if (retryCount >= maxRetries) {
-            clearInterval(checkConnection);
-            console.log('⏸️ Auto-retry dihentikan setelah', maxRetries, 'percobaan');
-          }
-        }
-      } else {
-        retryCount++;
-        if (retryCount >= maxRetries) {
-          clearInterval(checkConnection);
-        }
+      retryCount++;
+      
+      // Stop auto-retry setelah max attempts
+      if (retryCount >= maxRetries) {
+        clearInterval(checkConnection);
+        console.log('⏸️ Auto-retry dihentikan setelah', maxRetries, 'percobaan');
+        return;
       }
-    }, 10000); // Check setiap 10 detik
+      
+      // Hanya cek jika navigator mengatakan online
+      if (!navigator.onLine) {
+        console.log('📱 Navigator.onLine: false, skip check');
+        return;
+      }
+      
+      try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 3000);
+        
+        const response = await fetch(window.location.origin + '/', { 
+          method: 'HEAD',
+          cache: 'no-store',
+          signal: controller.signal
+        });
+        
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+          console.log('✅ Koneksi online terdeteksi, auto-reload...');
+          clearInterval(checkConnection);
+          
+          // Clear cache dan redirect
+          await clearAllCaches();
+          window.location.replace('/?t=' + Date.now());
+        }
+      } catch (error) {
+        // Masih offline
+        console.log(`❌ Auto-retry ${retryCount}/${maxRetries}: ${error.name}`);
+      }
+    }, 15000); // Check setiap 15 detik
   </script>
 </body>
 </html>

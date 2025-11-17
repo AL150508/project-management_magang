@@ -22,7 +22,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { IconUser, IconEdit, IconTrash, IconPlus, IconSearch, IconDownload, IconStar } from "@tabler/icons-react"
-import { toast } from "sonner"
+import { showConfirmation, showSuccess, showError, showInfo } from "@/lib & database connection/utils"
 
 export type MagangItem = {
   id: string | number
@@ -82,7 +82,7 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
       try {
         const { data, error } = await supabaseBrowser!
           .from("magang")
-          .select("*")
+          .select("id,Siswa,nama_siswa,nis,kelas,jurusan,nama_dudi,periode_mulai,periode_selesai,status,nilai,created_at")
           .order("created_at", { ascending: false })
         if (error) throw error
         magangData = (data as unknown as MagangRowDB[]) || null
@@ -122,18 +122,19 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
             : "Pending"
 
         return {
-          id: row["Siswa"] || "",
-          nama_siswa: row["Siswa"] ?? "",
-          kelas: row["Kelas"] ?? "",
-          jurusan: row["Jurusan"] ?? "",
-          nama_dudi: row["DUDI"] ?? row["nama_dudi"] ?? row["nama_perusahaan"] ?? "",
-          periode_mulai: row["Mulai"] ?? undefined,
-          periode_selesai: row["Selesai"] ?? undefined,
+          id: row["id"] || row["Siswa"] || "",
+          nama_siswa: row["nama_siswa"] ?? row["Siswa"] ?? "-"
+          kelas: row["kelas"] ?? row["Kelas"] ?? "",
+          jurusan: row["jurusan"] ?? row["Jurusan"] ?? "",
+          nama_dudi: row["nama_perusahaan"] ?? row["nama_dudi"] ?? row["DUDI"] ?? "",
+          periode_mulai: row["periode_mulai"] ?? row["Mulai"] ?? undefined,
+          periode_selesai: row["periode_selesai"] ?? row["Selesai"] ?? undefined,
           status: normalizedStatus,
           nilai: typeof row.nilai === "number" ? row.nilai : undefined,
         }
       })
 
+      console.log("Mapped data sample:", mapped.slice(0, 3))
       setData(mapped)
       
       setError(null) // Clear any previous errors
@@ -155,7 +156,7 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
       const composed = `${errorMessage} (${details})`
       
       setError(composed)
-      toast.error(composed)
+      showError(errorMessage, details)
     } finally {
       setLoading(false)
     }
@@ -220,40 +221,41 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
   const totalPages = Math.ceil(filteredData.length / pageSize)
 
   const handleDelete = async (id: string | number) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus data ini?")) return
-    
-    try {
-      console.log("Deleting Magang with ID:", id)
-      
-      if (!supabaseBrowser) {
-        toast.error("Konfigurasi database tidak lengkap")
-        return
-      }
-      const { error } = await supabaseBrowser!
-        .from("magang")
-        .delete()
-        .eq("Siswa", id)
-
-      if (error) {
-        console.error("Supabase delete error:", error)
-        throw new Error(`Delete error: ${error.message}`)
-      }
-      
-      console.log("Magang deleted successfully")
-      toast.success("Data Magang berhasil dihapus")
-      loadData()
-    } catch (error) {
-      console.error("Error deleting Magang:", error)
-      
-      let errorMessage = "Gagal menghapus data"
-      if (error instanceof Error) {
-        if (error.message.includes("Delete error")) {
-          errorMessage = "Gagal menghapus dari database"
+    showConfirmation({
+      message: "Apakah Anda yakin ingin menghapus data magang ini?",
+      confirmLabel: "Hapus",
+      onConfirm: async () => {
+        try {
+          if (!supabaseBrowser) {
+            showError("Konfigurasi database tidak lengkap")
+            return
+          }
+          
+          const { error } = await supabaseBrowser
+            .from("magang")
+            .delete()
+            .eq("Siswa", id)
+          
+          if (error) {
+            throw error
+          }
+          
+          showSuccess("Data magang berhasil dihapus")
+          loadData()
+        } catch (error) {
+          console.error("Error deleting Magang:", error)
+          
+          let errorMessage = "Gagal menghapus data magang"
+          if (error && typeof error === 'object' && 'message' in error) {
+            if (typeof error.message === 'string') {
+              errorMessage = error.message
+            }
+          }
+          const details = error instanceof Error ? error.message : String(error)
+          showError(errorMessage, details)
         }
       }
-      const details = error instanceof Error ? error.message : String(error)
-      toast.error(`${errorMessage} (${details})`)
-    }
+    })
   }
 
   const getStatusBadge = (status?: string) => {
@@ -348,9 +350,9 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
             <CardDescription>Kelola data siswa yang sedang melaksanakan magang di industri</CardDescription>
           </div>
           <div className="flex gap-2">
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={onAdd}>
-              <IconPlus className="size-4 mr-2" />
-              Siswa
+            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={onAdd}>
+              <IconPlus className="size-4 mr-2 text-white" />
+              <span className="text-white">Siswa</span>
             </Button>
             <Button size="sm" variant="outline" className="border-green-200 text-green-700 hover:bg-green-50">
               <IconDownload className="size-4 mr-2" />
@@ -489,7 +491,7 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
                                 error = null
                               }
                               if (!error) {
-                                toast.success(`Status diperbarui menjadi ${next}`)
+                                showSuccess(`Status diperbarui menjadi ${next}`)
                                 loadData()
                               }
                             } catch {}

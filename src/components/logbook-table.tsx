@@ -21,8 +21,22 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import {
+  Dialog,
+  DialogTrigger,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogClose,
+} from "@/components/ui/dialog"
 import { IconUser, IconEdit, IconTrash, IconPlus, IconSearch, IconEye } from "@tabler/icons-react"
 import { toast } from "sonner"
+import { MediaPreview } from "./logbook/media-preview"
+
+// Helper function for media type detection
+function isVideo(url: string) {
+  return /\.(mp4|webm|ogg|mov|m4v)(\?.*)?$/i.test(url);
+}
 
 export type LogbookItem = {
   id: string | number
@@ -67,36 +81,64 @@ export function LogbookTable({ onEdit, onView, onAdd, refreshKey, studentNameFil
         return
       }
 
-      let query = supabaseBrowser.from("logbook").select("*").order("tanggal", { ascending: false })
-      if (studentNameFilter) {
-        query = query.eq("nama_siswa", studentNameFilter)
-      }
-      const { data: logbookData, error } = await query
+      // 1. Ambil data dari tabel logbook tanpa join
+      const { data: logbookData, error } = await supabaseBrowser
+        .from("logbook")
+        .select("*")
+        .order("created_at", { ascending: false })
 
       if (error) {
-        console.error("Supabase error:", error.message || error)
+        console.error("Error loading logbook data:", error)
         setError(`Database error: ${error.message || 'Unknown error'}`)
         setData([])
         return
       }
 
-      console.log("Logbook data loaded successfully:", logbookData)
-      
-      const mapped: LogbookItem[] = (logbookData || []).map((row: Record<string, unknown>) => ({
-        id: row.id as string | number,
-        nama_siswa: (row.nama_siswa as string) || "",
-        tanggal: (row.tanggal as string) || "",
-        kegiatan: (row.kegiatan as string) || "",
-        kendala: (row.kendala as string) || "",
-        status: (row.status as "Disetujui" | "Ditolak" | "Belum Diverifikasi") || "Belum Diverifikasi",
-        catatan_guru: (row.catatan_guru as string) || "",
-        catatan_dudi: (row.catatan_dudi as string) || "",
-        foto: (row.foto as string) || "",
-        created_at: row.created_at as string,
-        updated_at: row.updated_at as string
+      if (!logbookData || logbookData.length === 0) {
+        console.log("No logbook data found")
+        setData([])
+        setLoading(false)
+        return
+      }
+
+      const formattedData = logbookData.map(log => ({
+        id: log.id,
+        nama_siswa: log.nama_siswa || log.Siswa || 'Unknown',
+        tanggal: log.tanggal || log.created_at,
+        kegiatan: log.kegiatan || '-',
+        kendala: log.kendala || '-',
+        status: log.status || 'menunggu',
+        foto: log.foto || null,
+        catatan_guru: log.catatan_guru || null,
+        catatan_dudi: log.catatan_dudi || null
       }))
 
-      setData(mapped)
+      const totalFetched = formattedData.length
+      console.log("Logbook fetched:", { totalFetched, studentNameFilter })
+
+      let filteredData = formattedData
+      if (studentNameFilter && typeof studentNameFilter === 'string') {
+        const filterTrim = studentNameFilter.trim().toLowerCase()
+        const exactMatches = formattedData.filter(item => (item.nama_siswa || '').trim().toLowerCase() === filterTrim)
+        const includesMatches = exactMatches.length > 0 ? exactMatches : formattedData.filter(item => (item.nama_siswa || '').toLowerCase().includes(filterTrim))
+        filteredData = includesMatches
+        console.log("Logbook after filter:", { filtered: filteredData.length })
+      }
+
+      if (studentNameFilter && filteredData.length === 0 && formattedData.length > 0) {
+        console.warn("Logbook filter returned 0 items, falling back to all items to avoid empty table")
+        filteredData = formattedData
+      }
+
+      const mappedData = filteredData.map(item => ({
+        ...item,
+        status: item.status === 'menunggu' ? 'Menunggu Verifikasi' : 
+               item.status === 'pending' ? 'Pending' :
+               item.status === 'disetujui' ? 'Disetujui' :
+               item.status === 'ditolak' ? 'Ditolak' : item.status
+      }))
+
+      setData(mappedData)
       setError(null)
     } catch (err) {
       console.error("Error loading logbook data:", err)
@@ -112,26 +154,39 @@ export function LogbookTable({ onEdit, onView, onAdd, refreshKey, studentNameFil
   }, [loadData, refreshKey])
 
   const handleDelete = async (id: string | number) => {
-    if (!confirm("Apakah Anda yakin ingin menghapus data logbook ini?")) return
+    // Tampilkan toast konfirmasi dengan action buttons
+    toast("Apakah Anda yakin ingin menghapus data logbook ini?", {
+      action: {
+        label: "Hapus",
+        onClick: async () => {
+          try {
+            if (!supabaseBrowser) {
+              throw new Error("Supabase client not initialized")
+            }
 
-    try {
-      if (!supabaseBrowser) {
-        throw new Error("Supabase client not initialized")
-      }
+            const { error } = await supabaseBrowser
+              .from("logbook")
+              .delete()
+              .eq("id", id)
 
-      const { error } = await supabaseBrowser
-        .from("logbook")
-        .delete()
-        .eq("id", id)
+            if (error) throw error
 
-      if (error) throw error
-
-      toast.success("Data logbook berhasil dihapus")
-      loadData()
-    } catch (err) {
-      console.error("Error deleting logbook:", err)
-      toast.error("Gagal menghapus data logbook")
-    }
+            toast.success("Data logbook berhasil dihapus")
+            loadData()
+          } catch (err) {
+            console.error("Error deleting logbook:", err)
+            toast.error("Gagal menghapus data logbook")
+          }
+        }
+      },
+      cancel: {
+        label: "Batal",
+        onClick: () => {
+          toast.info("Penghapusan dibatalkan")
+        }
+      },
+      duration: 5000
+    })
   }
 
   const getStatusBadge = (status: string) => {
@@ -212,9 +267,9 @@ export function LogbookTable({ onEdit, onView, onAdd, refreshKey, studentNameFil
       <CardHeader>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <CardTitle>Data Logbook Siswa</CardTitle>
+            <CardTitle></CardTitle>
             <CardDescription>
-              Kelola dan pantau logbook kegiatan magang siswa
+
             </CardDescription>
           </div>
           {onAdd && (
@@ -256,12 +311,13 @@ export function LogbookTable({ onEdit, onView, onAdd, refreshKey, studentNameFil
           <Table className="min-w-[760px] md:min-w-full">
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[220px]">Siswa & Tanggal</TableHead>
-                <TableHead className="w-[320px]">Kegiatan & Kendala</TableHead>
-                <TableHead className="w-[120px]">Status</TableHead>
+                <TableHead className="w-[180px] sm:w-[220px]">Siswa & Tanggal</TableHead>
+                <TableHead className="w-[80px] sm:w-[100px] text-center">Media</TableHead>
+                <TableHead className="w-[250px] sm:w-[300px]">Kegiatan & Kendala</TableHead>
+                <TableHead className="w-[100px] sm:w-[120px]">Status</TableHead>
                 {/* Sembunyikan kolom catatan di layar kecil untuk menjaga proporsi */}
-                <TableHead className="w-[280px] hidden md:table-cell">Catatan</TableHead>
-                <TableHead className="w-[100px] text-nowrap">Aksi</TableHead>
+                <TableHead className="w-[250px] hidden lg:table-cell">Catatan</TableHead>
+                <TableHead className="w-[80px] sm:w-[100px] text-center">Aksi</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -284,11 +340,78 @@ export function LogbookTable({ onEdit, onView, onAdd, refreshKey, studentNameFil
                         <div className="min-w-0 flex-1">
                           <p className="font-medium text-sm break-words">{item.nama_siswa}</p>
                           <p className="text-xs text-gray-500 mt-1 break-words">{formatDate(item.tanggal)}</p>
-                          {item.foto && (
-                            <p className="text-xs text-blue-600 mt-1">Ada foto</p>
-                          )}
                         </div>
                       </div>
+                    </TableCell>
+                    
+                    <TableCell className="text-center">
+                      {item.foto && (() => {
+                        try {
+                          const mediaInfo = JSON.parse(item.foto)
+                          return (
+                            <div className="flex flex-col items-center space-y-1">
+                              <p className="text-xs font-medium text-gray-600 mb-2">Media</p>
+                              <div className="relative group">
+                                <div className="relative">
+                                  <MediaPreview
+                                    url={mediaInfo.url}
+                                    type={mediaInfo.type === 'image' ? 'image' : 'video'}
+                                    alt={`Media ${item.id}`}
+                                    className="w-12 h-12 sm:w-16 sm:h-16"
+                                  />
+                                  <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full flex items-center justify-center pointer-events-none">
+                                    {mediaInfo.type === 'image' ? (
+                                      <div className="w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center">
+                                        <span className="text-xs text-white">📷</span>
+                                      </div>
+                                    ) : (
+                                      <div className="w-4 h-4 bg-red-500 rounded-full flex items-center justify-center">
+                                        <span className="text-xs text-white">🎥</span>
+                                      </div>
+                                    )}
+                                  </div>
+                                  {mediaInfo.type === 'video' && (
+                                    <div className="absolute inset-0 flex items-center justify-center bg-black bg-opacity-20 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none">
+                                      <div className="w-6 h-6 bg-white bg-opacity-80 rounded-full flex items-center justify-center">
+                                        <span className="text-xs">▶️</span>
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </div>
+                              <p className="text-xs text-gray-500 truncate max-w-[80px] sm:max-w-[120px]">
+                                {mediaInfo.filename || 'Media'}
+                              </p>
+                            </div>
+                          )
+                        } catch {
+                          // Fallback for old format
+                          return (
+                            <div className="flex flex-col items-center space-y-1">
+                              <p className="text-xs font-medium text-gray-600 mb-2">Media</p>
+                              <div className="relative">
+                                <MediaPreview
+                                  url={item.foto}
+                                  type="image"
+                                  alt={`Media ${item.id}`}
+                                  className="w-12 h-12 sm:w-16 sm:h-16"
+                                />
+                                <div className="absolute -top-1 -right-1 w-4 h-4 bg-blue-500 rounded-full flex items-center justify-center pointer-events-none">
+                                  <span className="text-xs text-white">📷</span>
+                                </div>
+                              </div>
+                              <p className="text-xs text-gray-500">Foto Lama</p>
+                            </div>
+                          )
+                        }
+                      })() || (
+                        <div className="flex flex-col items-center space-y-1">
+                          <p className="text-xs font-medium text-gray-600 mb-2">Media</p>
+                          <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-100 rounded-lg border-2 border-gray-200 flex items-center justify-center">
+                            <span className="text-xs text-gray-400">Tidak ada</span>
+                          </div>
+                        </div>
+                      )}
                     </TableCell>
                     
                     <TableCell className="min-w-0">

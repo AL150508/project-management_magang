@@ -4,6 +4,8 @@ import * as React from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { IconCalendar, IconClock, IconCheck, IconAlertCircle, IconTrendingUp } from "@tabler/icons-react"
+import { supabaseBrowser } from "@/lib & database connection/supabase-browser"
+import { useAuth } from "@/context/auth-context"
 
 interface StudentDashboardProps {
   userName: string
@@ -11,39 +13,103 @@ interface StudentDashboardProps {
 
 export function StudentDashboard({ userName }: StudentDashboardProps) {
   // Data dummy untuk dashboard siswa
-  const studentStats = {
-    totalLogbook: 12,
-    approvedLogbook: 8,
-    pendingLogbook: 3,
-    rejectedLogbook: 1,
+  const { user } = useAuth()
+  const [studentStats, setStudentStats] = React.useState({
+    totalLogbook: 0,
+    approvedLogbook: 0,
+    pendingLogbook: 0,
+    rejectedLogbook: 0,
     activeMagang: true,
-    magangProgress: 75,
-    nextDeadline: "2024-03-15"
-  }
+    magangProgress: 0,
+    nextDeadline: ""
+  })
 
-  const recentActivities = [
-    {
-      id: 1,
-      type: "logbook",
-      title: "Logbook hari ini disetujui",
-      time: "2 jam yang lalu",
-      status: "approved"
-    },
-    {
-      id: 2,
-      type: "magang",
-      title: "Progress magang 75%",
-      time: "1 hari yang lalu",
-      status: "progress"
-    },
-    {
-      id: 3,
-      type: "logbook",
-      title: "Logbook perlu perbaikan",
-      time: "2 hari yang lalu",
-      status: "rejected"
+  const [recentActivities, setRecentActivities] = React.useState<Array<{id:number|string; type:string; title:string; time:string; status:"approved"|"progress"|"rejected"|"pending"}>>([])
+
+  React.useEffect(() => {
+    let cancelled = false
+    const load = async () => {
+      try {
+        if (!supabaseBrowser) return
+        // 1) Coba pakai RPC untuk statistik global (bypass RLS via SECURITY DEFINER)
+        let total = 0, approved = 0, rejected = 0, pending = 0
+        try {
+          const { data: statsRpc, error: statsErr } = await supabaseBrowser.rpc('logbook_get_stats')
+          if (!statsErr && Array.isArray(statsRpc) && statsRpc[0]) {
+            total = Number(statsRpc[0].total || 0)
+            approved = Number(statsRpc[0].disetujui || 0)
+            rejected = Number(statsRpc[0].ditolak || 0)
+            pending = Number(statsRpc[0].belum_diverifikasi || 0)
+          } else {
+            // Fallback ke query biasa jika RPC belum tersedia/terbatas RLS
+            const { data: allRows } = await supabaseBrowser
+              .from('logbook')
+              .select('status')
+            type LogbookRow = { status?: string }
+            const rows: LogbookRow[] = (allRows as LogbookRow[] | null) || []
+            total = rows.length
+            approved = rows.filter((r: LogbookRow) => (r.status || '') === 'Disetujui').length
+            rejected = rows.filter((r: LogbookRow) => (r.status || '') === 'Ditolak').length
+            pending = rows.filter((r: LogbookRow) => (r.status || '') === 'Belum Diverifikasi').length
+          }
+        } catch {}
+
+        // 2) Coba pakai RPC untuk 3 aktivitas terbaru
+        type LatestRow = { id?: number | string; kegiatan?: string; tanggal?: string; status?: string }
+        let recent: Array<{id:number|string; type:string; title:string; time:string; status:"approved"|"progress"|"rejected"|"pending"}> = []
+        let nextDeadline = ''
+        try {
+          const { data: latestRpc } = await supabaseBrowser.rpc('logbook_get_latest', { p_limit: 3 })
+          const latestRows: LatestRow[] = (latestRpc as LatestRow[] | null) || []
+          recent = latestRows.map((r: LatestRow, idx: number) => ({
+            id: (r.id ?? idx) as number | string,
+            type: 'logbook',
+            title: r.kegiatan || 'Aktivitas logbook',
+            time: r.tanggal ? new Date(r.tanggal).toLocaleDateString('id-ID') : '',
+            status: (r.status === 'Disetujui') ? 'approved' : (r.status === 'Ditolak') ? 'rejected' : 'progress'
+          }))
+          const sortedDates = latestRows.map((r: LatestRow) => r.tanggal).filter(Boolean).sort() as string[]
+          nextDeadline = sortedDates.slice(-1)[0] || ''
+        } catch {
+          // Fallback ke query biasa (mungkin 0 jika RLS membatasi siswa)
+          const { data: fallbackRows } = await supabaseBrowser
+            .from('logbook')
+            .select('id,kegiatan,status,tanggal')
+            .order('created_at', { ascending: false })
+            .limit(3)
+          const rows: LatestRow[] = (fallbackRows as LatestRow[] | null) || []
+          recent = rows.map((r: LatestRow, idx: number) => ({
+            id: (r.id ?? idx) as number | string,
+            type: 'logbook',
+            title: r.kegiatan || 'Aktivitas logbook',
+            time: r.tanggal ? new Date(r.tanggal).toLocaleDateString('id-ID') : '',
+            status: (r.status === 'Disetujui') ? 'approved' : (r.status === 'Ditolak') ? 'rejected' : 'progress'
+          }))
+          const sortedDates = rows.map((r: LatestRow) => r.tanggal).filter(Boolean).sort() as string[]
+          nextDeadline = sortedDates.slice(-1)[0] || ''
+        }
+
+        const progress = total > 0 ? Math.min(100, Math.round((approved / total) * 100)) : 0
+
+        if (!cancelled) {
+          setStudentStats({
+            totalLogbook: total,
+            approvedLogbook: approved,
+            pendingLogbook: pending,
+            rejectedLogbook: rejected,
+            activeMagang: true,
+            magangProgress: progress,
+            nextDeadline
+          })
+          setRecentActivities(recent)
+        }
+      } catch (e) {
+        console.warn("StudentDashboard: load error", e)
+      }
     }
-  ]
+    load()
+    return () => { cancelled = true }
+  }, [user?.fullName, userName])
 
   const getStatusIcon = (status: string) => {
     switch (status) {
@@ -76,7 +142,7 @@ export function StudentDashboard({ userName }: StudentDashboardProps) {
       {/* Welcome Message */}
       <div className="mb-6">
         <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">
-          Selamat datang, {userName}!
+          Selamat datang!
         </h1>
         <p className="text-base sm:text-lg text-slate-600 leading-relaxed">
           Kelola kegiatan magang dan logbook harian Anda

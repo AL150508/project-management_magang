@@ -14,8 +14,9 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { IconBuilding } from "@tabler/icons-react"
-import { toast } from "sonner"
+import { showSuccess, showError, getCoordinates } from "@/lib & database connection/utils"
 import type { DudiItem } from "./dudi-table"
+import { AddressAutocomplete, MapPicker } from "@/components/dudi"
 
 // Props untuk komponen modal DUDI
 type DudiModalProps = {
@@ -35,7 +36,10 @@ export function DudiModal({ open, onOpenChange, dudi, onSuccess }: DudiModalProp
     email: "", // Email perusahaan
     penanggung_jawab: "", // Nama penanggung jawab
     jumlah_siswa: 0, // Jumlah siswa yang sedang magang
+    latitude: 0, // Latitude koordinat
+    longitude: 0, // Longitude koordinat
   })
+  const [addressError, setAddressError] = React.useState<string>("") // Error untuk validasi alamat
 
   // Effect untuk mengisi form data saat edit atau reset saat tambah baru
   React.useEffect(() => {
@@ -48,6 +52,10 @@ export function DudiModal({ open, onOpenChange, dudi, onSuccess }: DudiModalProp
         email: dudi.email || "",
         penanggung_jawab: dudi.penanggung_jawab || "",
         jumlah_siswa: dudi.jumlah_siswa || 0,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        latitude: (dudi as any).latitude || 0,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        longitude: (dudi as any).longitude || 0,
       })
     } else {
       // Jika tidak ada data DUDI, reset form (mode tambah baru)
@@ -58,19 +66,55 @@ export function DudiModal({ open, onOpenChange, dudi, onSuccess }: DudiModalProp
         email: "",
         penanggung_jawab: "",
         jumlah_siswa: 0,
+        latitude: 0,
+        longitude: 0,
       })
     }
+
+    setAddressError("") // Reset error saat modal dibuka
   }, [dudi])
 
   // Fungsi untuk handle submit form (tambah/edit data DUDI)
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    
     setLoading(true)
+    setAddressError("") // Clear error
 
     try {
       if (!supabaseBrowser) {
-        toast.error("Supabase client not initialized")
+        showError("Supabase client not initialized")
         return
+      }
+
+      // Jika koordinat belum ada atau 0, lakukan geocoding otomatis
+      let finalLatitude = formData.latitude
+      let finalLongitude = formData.longitude
+      
+      if (!finalLatitude || !finalLongitude || finalLatitude === 0 || finalLongitude === 0) {
+        if (formData.alamat.trim()) {
+          console.log('Melakukan geocoding otomatis untuk alamat:', formData.alamat)
+          const coords = await getCoordinates(formData.alamat)
+          
+          if (coords) {
+            finalLatitude = coords.lat
+            finalLongitude = coords.lon
+            console.log('Geocoding berhasil:', coords)
+            
+            // Update form data dengan koordinat baru
+            setFormData(prev => ({
+              ...prev,
+              latitude: coords.lat,
+              longitude: coords.lon
+            }))
+          } else {
+            setAddressError("Tidak dapat menemukan koordinat untuk alamat ini. Silakan pilih alamat dari daftar autocomplete atau sesuaikan alamat.")
+            return
+          }
+        } else {
+          setAddressError("Alamat harus diisi untuk menentukan lokasi DUDI.")
+          return
+        }
       }
 
       if (dudi) {
@@ -84,6 +128,8 @@ export function DudiModal({ open, onOpenChange, dudi, onSuccess }: DudiModalProp
             email: formData.email,
             penanggung_jawab: formData.penanggung_jawab,
             jumlah_siswa: formData.jumlah_siswa,
+            latitude: finalLatitude,
+            longitude: finalLongitude,
             updated_at: new Date().toISOString(), // Timestamp update
           })
           .eq("id", dudi.id) // Update berdasarkan ID
@@ -95,7 +141,7 @@ export function DudiModal({ open, onOpenChange, dudi, onSuccess }: DudiModalProp
         }
         
         console.log("DUDI updated successfully:", data)
-        toast.success("Data DUDI berhasil diperbarui")
+        showSuccess("Data DUDI berhasil diperbarui dengan koordinat lokasi")
       } else {
         // Mode tambah: Insert data DUDI baru
         const { data, error } = await supabaseBrowser
@@ -107,6 +153,8 @@ export function DudiModal({ open, onOpenChange, dudi, onSuccess }: DudiModalProp
             email: formData.email,
             penanggung_jawab: formData.penanggung_jawab,
             jumlah_siswa: formData.jumlah_siswa,
+            latitude: finalLatitude,
+            longitude: finalLongitude,
           })
           .select()
 
@@ -116,7 +164,7 @@ export function DudiModal({ open, onOpenChange, dudi, onSuccess }: DudiModalProp
         }
         
         console.log("DUDI created successfully:", data)
-        toast.success("Data DUDI berhasil ditambahkan")
+        showSuccess("Data DUDI berhasil ditambahkan dengan koordinat lokasi")
       }
 
       // Callback sukses dan tutup modal
@@ -125,7 +173,7 @@ export function DudiModal({ open, onOpenChange, dudi, onSuccess }: DudiModalProp
     } catch (error) {
       console.error("Error saving DUDI:", error)
       const errorMessage = error instanceof Error ? error.message : "Terjadi kesalahan tidak terduga"
-      toast.error(errorMessage)
+      showError(errorMessage)
     } finally {
       setLoading(false)
     }
@@ -136,6 +184,34 @@ export function DudiModal({ open, onOpenChange, dudi, onSuccess }: DudiModalProp
     setFormData(prev => ({
       ...prev,
       [field]: value, // Update field yang dipilih dengan nilai baru
+    }))
+  }
+
+  // Handle alamat change dari autocomplete
+  const handleAddressChange = (address: string) => {
+    setFormData(prev => ({
+      ...prev,
+      alamat: address,
+    }))
+  }
+
+  // Handle location select dari autocomplete
+  const handleAddressSelect = (address: string, lat: number, lng: number) => {
+    setFormData(prev => ({
+      ...prev,
+      alamat: address,
+      latitude: lat,
+      longitude: lng,
+    }))
+    setAddressError("") // Clear error saat lokasi dipilih
+  }
+
+  // Handle location change dari map
+  const handleLocationChange = (lat: number, lng: number) => {
+    setFormData(prev => ({
+      ...prev,
+      latitude: lat,
+      longitude: lng,
     }))
   }
 
@@ -151,7 +227,7 @@ export function DudiModal({ open, onOpenChange, dudi, onSuccess }: DudiModalProp
       />
       
       {/* Modal Content */}
-      <div className="relative bg-white rounded-lg shadow-lg w-full max-w-md mx-4 p-6">
+      <div className="relative bg-white rounded-lg shadow-lg w-full max-w-2xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
         {/* Header modal dengan icon dan judul */}
         <div className="flex items-center gap-2 mb-4">
           <IconBuilding className="size-5 text-blue-600" />
@@ -177,15 +253,29 @@ export function DudiModal({ open, onOpenChange, dudi, onSuccess }: DudiModalProp
             />
           </div>
 
-          <div className="space-y-2">
-            <Label htmlFor="alamat">Alamat</Label>
-            <Input
-              id="alamat"
-              placeholder="Masukkan alamat lengkap"
-              value={formData.alamat}
-              onChange={(e) => handleInputChange("alamat", e.target.value)}
-            />
+          {/* Address Autocomplete */}
+          <AddressAutocomplete
+            value={formData.alamat}
+            onChange={handleAddressChange}
+            onSelect={handleAddressSelect}
+            error={addressError}
+            placeholder="Ketik alamat untuk mencari lokasi DUDI..."
+            label="Alamat Lengkap"
+          />
+          
+          {/* Info geocoding */}
+          <div className="text-xs text-gray-500 mt-1">
+            💡 Tip: Pilih alamat dari daftar autocomplete untuk akurasi terbaik, atau sistem akan mencari koordinat secara otomatis
           </div>
+
+          {/* Map Picker */}
+          <MapPicker
+            latitude={formData.latitude}
+            longitude={formData.longitude}
+            onLocationChange={handleLocationChange}
+            height={260}
+            label="Lokasi pada Peta"
+          />
 
           <div className="space-y-2">
             <Label htmlFor="telepon">Telepon</Label>

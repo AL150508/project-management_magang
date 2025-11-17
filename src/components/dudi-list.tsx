@@ -5,6 +5,7 @@ import { supabaseBrowser } from "@/lib & database connection/supabase-browser"
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { IconBuilding, IconMail, IconMapPin, IconPhone, IconUsers } from "@tabler/icons-react"
+import { DudiMapViewer } from "@/components/dudi/dudi-map-viewer"
 
 type Dudi = {
   id: string | number

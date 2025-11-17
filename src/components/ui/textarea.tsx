@@ -13,7 +13,8 @@ import { cn } from "@/lib & database connection/utils"
 //
 // Contoh:
 // <Textarea rows={4} placeholder="Tulis catatan..." />
-export type TextareaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement>
+
+export interface TextareaProps extends React.TextareaHTMLAttributes<HTMLTextAreaElement> {}
 
 const Textarea = React.forwardRef<HTMLTextAreaElement, TextareaProps>(
   ({ className, ...props }, ref) => {

@@ -1,8 +1,10 @@
 "use client"
 
-// Sidebar untuk Siswa
+// Sidebar untuk Siswa - Modern Design dengan Collapsible
 // Fitur:
 // - Navigasi utama (Dashboard, DUDI, Magang, Logbook)
+// - Sidebar yang bisa expand/collapse dengan animasi smooth
+// - Design modern dengan gradient dan shadows
 // - Menandai item aktif berdasarkan pathname (URL saat ini)
 // - Navigasi client-side dengan Link dari next/link untuk SPA
 // - Tidak ada full page reload saat navigasi
@@ -10,8 +12,12 @@
 import * as React from "react"
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { IconHome, IconBuilding, IconSchool, IconNotebook } from "@tabler/icons-react"
-import { cn } from "@/lib & database connection/utils"
+import { ChevronDown, LogOut, Settings, User } from "lucide-react"
+import { IconHome, IconBuilding, IconSchool, IconNotebook, IconX, IconMenu2 } from "@tabler/icons-react"
+import { cn, showConfirmation, showSuccess } from "@/lib & database connection/utils"
+import { useAuth } from "@/context/auth-context"
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { Button } from "@/components/ui/button"
 
 // Properti yang diperlukan Sidebar Siswa
 interface StudentSidebarProps {
@@ -53,47 +59,281 @@ const menuItems = [
 
 export function StudentSidebar({ activeItem, onItemClick }: StudentSidebarProps) {
   const pathname = usePathname() // Ambil pathname saat ini untuk sinkronisasi aktif item
+  const { user, logout } = useAuth()
+  const [isExpanded, setIsExpanded] = React.useState(true) // Default expanded di desktop
+  const [isMobile, setIsMobile] = React.useState(false)
+
+  // Handle responsive behavior
+  React.useEffect(() => {
+    const checkMobile = () => {
+      const mobile = window.innerWidth < 768
+      setIsMobile(mobile)
+      if (mobile) {
+        setIsExpanded(false) // Collapse di mobile
+      }
+    }
+    
+    checkMobile()
+    window.addEventListener('resize', checkMobile)
+    return () => window.removeEventListener('resize', checkMobile)
+  }, [])
 
   // Handler untuk klik item (opsional, untuk backward compatibility)
   const handleItemClick = (item: { id: string; href: string }) => {
     if (onItemClick) {
       onItemClick(item.id)
     }
+    // Auto collapse pada mobile setelah navigasi
+    if (window.innerWidth < 768) {
+      setIsExpanded(false)
+    }
+  }
+
+  // Toggle sidebar expansion
+  const toggleSidebar = () => {
+    setIsExpanded(!isExpanded)
   }
 
   return (
-    <div className="flex h-full w-14 flex-col bg-white border-r border-blue-100/60 transition-all duration-300 ease-in-out">
-      <div className="flex-1 overflow-y-auto py-4">
-        <nav className="space-y-1 px-1">
-          {menuItems.map((item) => {
-            const Icon = item.icon // komponen ikon untuk item ini
-            // Gunakan pathname sebagai sumber kebenaran, fallback ke activeItem jika pathname tidak tersedia
-            const isActive = pathname === item.href || pathname?.startsWith(item.href + "/") || activeItem === item.id
-            
-            return (
-              <Link
-                key={item.id}
-                href={item.href}
-                onClick={() => handleItemClick(item)}
-                className={cn(
-                  "group flex w-full items-center rounded-lg py-3 justify-center text-sm font-medium transition-all hover:bg-blue-50",
-                  isActive 
-                    ? "bg-blue-600 text-white shadow-sm" 
-                    : "text-gray-700 hover:text-blue-600"
-                )}
-              >                                                            
-                <Icon 
-                  className={cn(
-                    "h-5 w-5 flex-shrink-0",
-                    isActive ? "text-white" : "text-gray-400 group-hover:text-blue-600"
-                  )} 
-                />
-                <div className="hidden"></div>
-              </Link>
-            )
-          })}
-        </nav>
+    <>
+      {/* Mobile Overlay */}
+      {isExpanded && isMobile && (
+        <div 
+          className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 md:hidden"
+          onClick={() => setIsExpanded(false)}
+        />
+      )}
+      
+      {/* Sidebar */}
+      <div 
+        className={cn(
+          "sticky top-0 flex h-screen flex-col bg-white border-r border-gray-200 shadow-sm transition-all duration-300 ease-in-out flex-shrink-0",
+          isExpanded ? "w-64" : "w-16",
+          isMobile && isExpanded && "fixed left-0 top-0 z-50"
+        )}
+        style={{ height: '100vh', minHeight: '100vh' }}
+      >
+        {/* Header - hanya tampil saat expanded */}
+        {isExpanded && (
+          <div className="flex items-center justify-between p-4 border-b border-slate-200/60">
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center">
+                <IconHome className="w-4 h-4 text-white" />
+              </div>
+              <span className="font-semibold text-slate-800 text-sm">Menu Siswa</span>
+            </div>
+            <button
+              onClick={toggleSidebar}
+              className="p-1.5 rounded-md hover:bg-slate-100 transition-colors duration-200"
+            >
+              <IconX className="w-4 h-4 text-slate-600" />
+            </button>
+          </div>
+        )}
+        
+        {/* Toggle button untuk collapsed state */}
+        {!isExpanded && (
+          <div className="p-4 border-b border-slate-200/60">
+            <button
+              onClick={toggleSidebar}
+              className="w-full p-2 rounded-lg hover:bg-slate-100 transition-colors duration-200 flex items-center justify-center"
+            >
+              <IconMenu2 className="w-5 h-5 text-slate-600" />
+            </button>
+          </div>
+        )}
+
+        {/* Navigation Menu */}
+        <div className="flex-1 overflow-y-auto">
+          <nav className={cn("space-y-1", isExpanded ? "px-3 py-2" : "px-2 py-2")}>
+            {menuItems.map((item) => {
+              const Icon = item.icon
+              const isActive = pathname === item.href || pathname?.startsWith(item.href + "/") || activeItem === item.id
+              
+              if (isExpanded) {
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    onClick={() => handleItemClick(item)}
+                    className={cn(
+                      "group flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all duration-200",
+                      isActive 
+                        ? "bg-blue-600 text-white" 
+                        : "text-slate-700 hover:bg-slate-50"
+                    )}
+                  >
+                    <Icon className={cn("w-5 h-5", isActive ? "text-white" : "text-slate-500")} />
+                    <div className="flex flex-col">
+                      <span className="font-medium text-sm">{item.label}</span>
+                      <span className={cn("text-xs", isActive ? "text-blue-100" : "text-slate-500")}>
+                        {item.description}
+                      </span>
+                    </div>
+                  </Link>
+                )
+              } else {
+                return (
+                  <Link
+                    key={item.id}
+                    href={item.href}
+                    onClick={() => handleItemClick(item)}
+                    className={cn(
+                      "group flex items-center justify-center p-3 rounded-lg transition-all duration-200",
+                      isActive 
+                        ? "bg-blue-600 text-white" 
+                        : "text-slate-500 hover:bg-slate-50 hover:text-blue-600"
+                    )}
+                  >
+                    <Icon className="w-5 h-5" />
+                  </Link>
+                )
+              }
+            })}
+          </nav>
+        </div>
+
+        {/* User Profile Section */}
+        <div className="border-t border-slate-200/60">
+          {isExpanded ? (
+            <div className="p-4">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    className="w-full flex items-center gap-3 p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors"
+                  >
+                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-xs">
+                      {user?.fullName?.charAt(0)?.toUpperCase() || user?.username?.charAt(0)?.toUpperCase() || "A"}
+                    </div>
+                    <div className="flex-1 min-w-0 text-left">
+                      <p className="text-sm font-medium text-slate-800 truncate">
+                        {user?.fullName || user?.username || "alvasya_RPL1"}
+                      </p>
+                      <p className="text-xs text-slate-500">
+                        @{user?.username || "alvasya"}
+                      </p>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-slate-400" />
+                  </Button>
+                </DropdownMenuTrigger>
+                
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="flex items-center gap-3 p-3">
+                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-xs">
+                      {user?.fullName?.charAt(0)?.toUpperCase() || user?.username?.charAt(0)?.toUpperCase() || "A"}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-slate-900">
+                        {user?.fullName || user?.username || "alvasya_RPL1"}
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        @{user?.username || "alvasya"}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <DropdownMenuSeparator />
+                  
+                  <DropdownMenuItem className="cursor-pointer">
+                    <User className="h-4 w-4 mr-2" />
+                    Profile
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuItem className="cursor-pointer">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Pengaturan
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuSeparator />
+                  
+                  <DropdownMenuItem 
+                    className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                    onClick={() => {
+                      showConfirmation({
+                        message: "Apakah Anda yakin ingin keluar dari aplikasi?",
+                        onConfirm: async () => {
+                          logout()
+                          showSuccess("Berhasil keluar dari aplikasi")
+                        },
+                        confirmLabel: "Ya, Keluar",
+                        cancelLabel: "Batal",
+                        duration: 6000
+                      })
+                    }}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Keluar
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          ) : (
+            <div className="p-4 flex justify-center">
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs p-0"
+                  >
+                    {user?.fullName?.charAt(0)?.toUpperCase() || user?.username?.charAt(0)?.toUpperCase() || "A"}
+                  </Button>
+                </DropdownMenuTrigger>
+                
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="flex items-center gap-3 p-3">
+                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-xs">
+                      {user?.fullName?.charAt(0)?.toUpperCase() || user?.username?.charAt(0)?.toUpperCase() || "A"}
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-sm font-medium text-slate-900">
+                        {user?.fullName || user?.username || "alvasya_RPL1"}
+                      </span>
+                      <span className="text-xs text-slate-500">
+                        @{user?.username || "alvasya"}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <DropdownMenuSeparator />
+                  
+                  <DropdownMenuItem className="cursor-pointer">
+                    <User className="h-4 w-4 mr-2" />
+                    Profile
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuItem className="cursor-pointer">
+                    <Settings className="h-4 w-4 mr-2" />
+                    Pengaturan
+                  </DropdownMenuItem>
+                  
+                  <DropdownMenuSeparator />
+                  
+                  <DropdownMenuItem 
+                    className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                    onClick={() => {
+                      showConfirmation({
+                        message: "Apakah Anda yakin ingin keluar dari aplikasi?",
+                        onConfirm: async () => {
+                          logout()
+                          showSuccess("Berhasil keluar dari aplikasi")
+                        },
+                        confirmLabel: "Ya, Keluar",
+                        cancelLabel: "Batal",
+                        duration: 6000
+                      })
+                    }}
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Keluar
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   )
 }

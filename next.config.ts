@@ -13,20 +13,12 @@ const withPWA = withPWAInit({
     skipWaiting: true, // Skip waiting untuk update service worker
   runtimeCaching: [
       {
-        // Tangani navigation requests (halaman SPA) dengan NetworkFirst
-        // Coba network dulu (timeout 3 detik), jika gagal baru gunakan cache
-        urlPattern: /^\/(dashboard|logbook|magang|dudi)?\/?$/,
-        handler: "NetworkFirst",
+        // Offline fallback untuk navigation requests
+        urlPattern: ({ request }) => request.mode === 'navigate',
+        handler: "NetworkOnly",
         options: {
           cacheName: "pages-cache",
-          expiration: {
-            maxEntries: 50,
-            maxAgeSeconds: 24 * 60 * 60, // 24 jam
-          },
-          cacheableResponse: {
-            statuses: [0, 200],
-          },
-          networkTimeoutSeconds: 3, // Timeout 3 detik untuk cek network sebelum fallback ke cache
+          networkTimeoutSeconds: 3,
         },
       },
     {
@@ -72,18 +64,10 @@ const withPWA = withPWAInit({
       },
     },
   ],
-    // Konfigurasi navigateFallback: HANYA aktif saat benar-benar offline
-    // NetworkFirst handler di atas akan mencoba network dulu (timeout 3 detik)
-    // Jika network gagal DAN tidak ada cache, baru fallback ke offline.html
-    navigateFallback: "/offline.html",
-    navigateFallbackAllowlist: [
-      // Hanya untuk route aplikasi utama (SPA routes)
-      /^\/$/,
-      /^\/dashboard/,
-      /^\/logbook/,
-      /^\/magang/,
-      /^\/dudi/,
-    ],
+    // DISABLE navigateFallback untuk mencegah offline page muncul saat online
+    // Offline page hanya akan muncul jika user benar-benar tidak bisa akses network
+    // navigateFallback: "/offline.html", // DISABLED
+    // navigateFallbackAllowlist: [], // DISABLED
     navigateFallbackDenylist: [
       // Jangan gunakan offline.html untuk:
       /^\/_next\/.*/, // Next.js internal files
@@ -94,15 +78,26 @@ const withPWA = withPWAInit({
       /^\/icons\/.*/, // Icons
       /^\/manifest\.json/, // Manifest
       /^\/.*\.(svg|png|jpg|jpeg|gif|webp|ico|json|js|css)$/, // Static assets
+      /^\?.*bypass.*/, // Bypass URLs
     ],
-    // Disable navigationPreload untuk menghindari race condition
-    navigationPreload: false,
+    // Enable navigationPreload untuk performa yang lebih baik
+    navigationPreload: true,
   },
 });
 
 // Konfigurasi Next.js untuk aplikasi management magang
 const nextConfig: NextConfig = {
-  // Konfigurasi Next.js
+  // Konfigurasi untuk mengatasi masalah Turbopack dengan font
+  experimental: {
+    turbo: {
+      resolveAlias: {
+        // Workaround untuk font issues di Turbopack
+        '@next/font/google': 'next/font/google',
+      },
+    },
+  },
+  // Transpile packages yang mungkin bermasalah
+  transpilePackages: ['next-font'],
 };
 
 export default withPWA(nextConfig);

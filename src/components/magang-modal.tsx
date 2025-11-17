@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { supabaseBrowser } from "@/lib & database connection/supabase-browser"
+import { useAuth } from "@/context/auth-context"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -63,6 +64,9 @@ export function MagangModal({ open, onOpenChange, magang, onSuccess }: MagangMod
   const [loading, setLoading] = React.useState(false) // Loading state saat submit
   const [dudiOptions, setDudiOptions] = React.useState<string[]>([]) // Daftar nama DUDI untuk select
   const [loadingDudi, setLoadingDudi] = React.useState(false) // Loading state saat load DUDI
+  const [siswaOptions, setSiswaOptions] = React.useState<string[]>([]) // Daftar nama siswa untuk select
+  const [loadingSiswa, setLoadingSiswa] = React.useState(false) // Loading state saat load siswa
+  const [showManualInput, setShowManualInput] = React.useState(false) // Toggle manual input
   const [mounted, setMounted] = React.useState(false) // State untuk mencegah hydration mismatch
 
   // Effect untuk mengisi form data saat edit atau reset saat tambah baru
@@ -123,6 +127,33 @@ export function MagangModal({ open, onOpenChange, magang, onSuccess }: MagangMod
     loadDudi()
   }, [])
 
+  // Effect untuk memuat daftar siswa dari database untuk opsi select
+  React.useEffect(() => {
+    const loadSiswa = async () => {
+      try {
+        if (!supabaseBrowser) return
+        setLoadingSiswa(true)
+        // Ambil nama siswa dari tabel magang yang sudah ada
+        const { data, error } = await supabaseBrowser
+          .from("magang")
+          .select("nama_siswa")
+          .order("nama_siswa", { ascending: true })
+        if (error) throw error
+        // Filter dan ambil nama siswa yang valid
+        const names = (data || [])
+          .map((row: { nama_siswa?: string }) => row.nama_siswa)
+          .filter((v): v is string => Boolean(v))
+        // Hapus duplikasi dan set ke state
+        setSiswaOptions(Array.from(new Set(names)))
+      } catch (err) {
+        console.error("Gagal memuat daftar siswa:", err)
+      } finally {
+        setLoadingSiswa(false)
+      }
+    }
+    loadSiswa()
+  }, [])
+
   // Effect untuk menandai komponen sudah ter-mount
   React.useEffect(() => {
     setMounted(true)
@@ -137,13 +168,41 @@ export function MagangModal({ open, onOpenChange, magang, onSuccess }: MagangMod
       if (!supabaseBrowser) {
         throw new Error("Supabase client not initialized")
       }
-      
+
+      // Validasi data yang wajib diisi
+      const requiredFields = [
+        { field: 'nama_dudi', label: 'Nama DUDI' },
+        { field: 'periode_mulai', label: 'Periode Mulai' },
+        { field: 'periode_selesai', label: 'Periode Selesai' }
+      ]
+
+      for (const { field, label } of requiredFields) {
+        if (!formData[field as keyof typeof formData]) {
+          throw new Error(`${label} wajib diisi`)
+        }
+      }
+
+      // Get student name
+      let studentName = formData.nama_siswa
+      console.log("User data:", { user, fullName: user?.fullName })
+      if (!magang && user?.fullName) {
+        // For new entries, use user's fullName from auth context
+        studentName = user.fullName
+        console.log("Using fullName from user:", studentName)
+      } else {
+        console.log("Using formData.nama_siswa:", studentName)
+      }
+
       // Format data sesuai struktur database
       const dataToSubmit = {
-        Siswa: formData.nama_siswa, // Nama siswa
-        "Kelas dan Jurusan": [formData.kelas, formData.jurusan].filter(Boolean).join("\n") || null, // Gabung kelas dan jurusan
-        Dudi: formData.nama_dudi || null, // Nama DUDI
-        Periode: formData.periode_mulai || null, // Periode mulai
+        Siswa: studentName, // Kolom Siswa diisi dengan nama siswa
+        nama_siswa: studentName, // Kolom nama_siswa juga diisi dengan nama siswa
+        nis: formData.nis || null, // NIS
+        kelas: formData.kelas || null, // Kelas
+        jurusan: formData.jurusan || null, // Jurusan
+        nama_dudi: formData.nama_dudi || null, // Nama DUDI
+        periode_mulai: formData.periode_mulai || null, // Periode mulai
+        periode_selesai: formData.periode_selesai || null, // Periode selesai
         status: formData.status, // Status magang
         nilai: formData.nilai ? Number(formData.nilai) : null, // Konversi nilai ke number
       }
@@ -173,7 +232,7 @@ export function MagangModal({ open, onOpenChange, magang, onSuccess }: MagangMod
           .insert([{
             ...dataToSubmit
           }])
-          .select('"Siswa","Kelas dan Jurusan","Dudi","Periode",status,nilai')
+          .select('Siswa,nama_siswa,nis,kelas,jurusan,nama_dudi,periode_mulai,periode_selesai,status,nilai')
 
         if (error || (status && status >= 400)) {
           const composed = error?.message || statusText || "Unknown error"
@@ -222,7 +281,7 @@ export function MagangModal({ open, onOpenChange, magang, onSuccess }: MagangMod
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[600px]">
+      <DialogContent className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-y-auto mx-auto">
         <DialogHeader>
           <DialogTitle>
             {magang ? "Edit Data Siswa Magang" : "Tambah Data Siswa Magang"}
@@ -238,14 +297,53 @@ export function MagangModal({ open, onOpenChange, magang, onSuccess }: MagangMod
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label htmlFor="nama_siswa">Nama Siswa *</Label>
-              <Input
-                id="nama_siswa"
-                value={formData.nama_siswa}
-                onChange={(e) => handleInputChange("nama_siswa", e.target.value)}
-                placeholder="Masukkan nama siswa"
-                required
-              />
+              <div className="flex items-center justify-between">
+                <Label htmlFor="nama_siswa">Nama Siswa *</Label>
+                <button
+                  type="button"
+                  onClick={() => setShowManualInput(!showManualInput)}
+                  className="text-xs text-blue-600 hover:text-blue-800 underline"
+                >
+                  {showManualInput ? "Pilih dari daftar" : "Input manual"}
+                </button>
+              </div>
+              {showManualInput ? (
+                <Input
+                  id="nama_siswa"
+                  value={formData.nama_siswa}
+                  onChange={(e) => handleInputChange("nama_siswa", e.target.value)}
+                  placeholder="Ketik nama siswa baru"
+                  required
+                />
+              ) : (
+                mounted ? (
+                  <Select
+                    value={formData.nama_siswa}
+                    onValueChange={(value) => {
+                      if (value === "__manual__") {
+                        setShowManualInput(true)
+                        handleInputChange("nama_siswa", "")
+                      } else {
+                        handleInputChange("nama_siswa", value)
+                      }
+                    }}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder={loadingSiswa ? "Memuat..." : "Pilih atau ketik nama siswa"} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="__manual__">
+                        <span className="text-blue-600 font-medium">+ Ketik nama baru</span>
+                      </SelectItem>
+                      {siswaOptions.map((name) => (
+                        <SelectItem key={name} value={name}>{name}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                ) : (
+                  <Input disabled placeholder="Memuat..." />
+                )
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="nis">NIS</Label>
@@ -349,16 +447,17 @@ export function MagangModal({ open, onOpenChange, magang, onSuccess }: MagangMod
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="flex-col sm:flex-row gap-2 sm:gap-0">
             <Button
               type="button"
               variant="outline"
               onClick={() => onOpenChange(false)}
               disabled={loading}
+              className="w-full sm:w-auto"
             >
-              Bata    l
+              Batal
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="w-full sm:w-auto">
               {loading ? "Menyimpan..." : magang ? "Perbarui" : "Tambah"}
             </Button>
           </DialogFooter>

@@ -13,3 +13,11 @@ export { DudiModal as ModalDUDI } from "@/components/dudi-modal"
 export { DudiRegistrationModal as ModalRegistrasiDUDI } from "@/components/dudi-registration-modal"
 export { DudiSearch as PencarianDUDI } from "@/components/dudi-search"
 export { DudiTable as TabelDUDI } from "@/components/dudi-table"
+
+// Map Viewer components
+export { DudiMapViewer } from "./dudi-map-viewer"
+export { SiswaMapViewer } from "./siswa-map-viewer"
+
+// Location components
+export { AddressAutocomplete } from "./address-autocomplete"
+export { MapPicker } from "./map-picker"

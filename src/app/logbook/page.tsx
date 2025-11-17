@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { useRole } from "@/context/role-context"
+import { useAuth } from "@/context/auth-context"
 import { HeaderGuru, SidebarGuru } from "@/components/guru"
 import { HeaderSiswa, SidebarSiswa } from "@/components/siswa"
 import { LogbookTable, LogbookModal } from "@/components/logbook"
@@ -12,6 +13,7 @@ import { SectionLogbookCards } from "@/components/dashboard/sections"
 // Menampilkan tampilan berbeda untuk guru (admin) dan siswa
 export default function LogbookPage() {
   const { role, setRole } = useRole() // Ambil role user dari context
+  const { user } = useAuth() // Ambil user login dari AuthContext
   const [activeItem, setActiveItem] = React.useState("logbook") // Item sidebar yang aktif
   const [mounted, setMounted] = React.useState(false) // State untuk mencegah hydration mismatch
   const [modalOpen, setModalOpen] = React.useState(false) // Status modal logbook
@@ -21,8 +23,9 @@ export default function LogbookPage() {
 
   // Hitung nama user berdasarkan role saat ini
   const userName = React.useMemo(() => {
-    return role === "guru" ? "Guru Admin" : "Alvasya"
-  }, [role])
+    if (role === "guru") return "Guru Admin"
+    return user?.fullName || "Siswa"
+  }, [role, user?.fullName])
 
   // Effect untuk menandai komponen sudah ter-mount
   React.useEffect(() => {
@@ -92,18 +95,17 @@ export default function LogbookPage() {
   if (role === "guru") {
     // Tampilan untuk Guru/Admin - dengan tabel manajemen lengkap
     return (
-      <div className="flex flex-col min-h-[100dvh] min-w-0 bg-gray-50 transition-all duration-300 ease-in-out">
-        <HeaderGuru 
-          userName={userName}
-          userRole={role}
-          onRoleChange={handleRoleChange}
+      <div className="flex min-h-screen bg-gray-50">
+        <SidebarGuru 
+          activeItem={activeItem}
+          onItemClick={handleItemClick}
         />
-        <div className="flex flex-1 min-w-0">
-          <SidebarGuru 
-            activeItem={activeItem}
-            onItemClick={handleItemClick}
+        <div className="flex-1 flex flex-col min-w-0">
+          <HeaderGuru 
+            userRole={role}
+            onRoleChange={handleRoleChange}
           />
-          <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-4">
+          <main className="flex-1 px-4 sm:px-6 lg:px-8 py-4">
             {/* Header Section */}
             <div className="mb-6">
               <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">
@@ -142,18 +144,17 @@ export default function LogbookPage() {
 
   // Tampilan untuk Siswa - hanya logbook mereka sendiri
   return (
-    <div className="flex flex-col min-h-[100dvh] min-w-0 bg-gray-50 transition-all duration-300 ease-in-out">
-      <HeaderSiswa 
-        userName={userName}
-        userRole={role}
-        onRoleChange={handleRoleChange}
+    <div className="flex min-h-screen bg-gray-50">
+      <SidebarSiswa 
+        activeItem={activeItem}
+        onItemClick={handleItemClick}
       />
-      <div className="flex flex-1 min-w-0">
-        <SidebarSiswa 
-          activeItem={activeItem}
-          onItemClick={handleItemClick}
+      <div className="flex-1 flex flex-col min-w-0">
+        <HeaderSiswa 
+          userRole={role}
+          onRoleChange={handleRoleChange}
         />
-        <main className="flex-1 min-w-0 px-4 sm:px-6 lg:px-8 py-4">
+        <main className="flex-1 px-4 sm:px-6 lg:px-8 py-4">
           {/* Header Section */}
           <div className="mb-6">
             <h1 className="text-3xl sm:text-4xl font-bold text-slate-900 mb-2">Logbook Magang Saya</h1>
@@ -166,7 +167,7 @@ export default function LogbookPage() {
                     onEdit={(item: LogbookItem)=>{ setSelectedLogbook(item); setModalMode("edit"); setModalOpen(true)}}
                     onAdd={handleAdd}
                     refreshKey={refreshKey}
-                    studentNameFilter={userName} // Filter hanya logbook siswa ini
+                    studentNameFilter={role === "siswa" && user?.fullName ? user.fullName : undefined}
                   />
                 </div>
         </main>
@@ -175,8 +176,8 @@ export default function LogbookPage() {
       {/* Modal untuk tambah/edit logbook siswa */}
       <LogbookModal
         open={modalOpen}
-        onOpenChange={setModalOpen}
-        logbook={selectedLogbook}
+        onOpenChange={setModalOpen}     // handler untuk mengubah status modal
+        logbook={selectedLogbook}         // data logbook yang dipilih untuk user edit
         onSuccess={handleModalSuccess}
         mode={modalMode}
         defaultNamaSiswa={userName} // Default nama siswa untuk form baru

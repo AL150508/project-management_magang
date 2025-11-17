@@ -16,7 +16,7 @@
  * - Loading state dan error handling
  */
 
-import { IconNotebook, IconCalendar, IconUser } from "@tabler/icons-react"
+import { IconNotebook, IconCalendar, IconUser, IconChevronLeft, IconChevronRight } from "@tabler/icons-react"
 import { supabaseBrowser } from "@/lib & database connection/supabase-browser"
 import * as React from "react"
 
@@ -31,6 +31,8 @@ type LatestLogbookItem = {
 export function SectionLatestLogbook({ items, compact = false, minHeightClass }: { items?: LatestLogbookItem[]; compact?: boolean; minHeightClass?: string }) {
   const [logbookData, setLogbookData] = React.useState<LatestLogbookItem[]>([])
   const [loading, setLoading] = React.useState(true)
+  const [currentPage, setCurrentPage] = React.useState(1)
+  const itemsPerPage = 2 // Menampilkan 2 items per page agar lebih compact
 
   // REFACTORED_DASHBOARD_SECTION: Load data from database if no items provided
   React.useEffect(() => {
@@ -42,8 +44,11 @@ export function SectionLatestLogbook({ items, compact = false, minHeightClass }:
 
     const loadLogbookData = async () => {
       try {
-        if (!supabaseBrowser) return
-        
+        if (!supabaseBrowser) {
+          setLogbookData([])
+          setLoading(false)
+          return
+        }
         const { data, error } = await supabaseBrowser
           .from("logbook")
           .select(`
@@ -61,7 +66,6 @@ export function SectionLatestLogbook({ items, compact = false, minHeightClass }:
           return
         }
 
-        // DASHBOARD_LOGBOOK_MAPPING: Mapping data logbook dari database ke UI
         const formattedData: LatestLogbookItem[] = data?.map((item: Record<string, unknown>) => ({
           id: (item.id as string | number).toString(),
           studentName: (item.nama_siswa as string) || "Nama tidak tersedia",
@@ -81,21 +85,40 @@ export function SectionLatestLogbook({ items, compact = false, minHeightClass }:
     }
 
     loadLogbookData()
+
+    // Realtime subscribe untuk perubahan tabel logbook
+    const channel = supabaseBrowser?.channel("realtime-latest-logbook")
+      .on("postgres_changes", { event: "*", schema: "public", table: "logbook" }, () => loadLogbookData())
+      .subscribe()
+
+    return () => {
+      if (channel) supabaseBrowser?.removeChannel(channel)
+    }
   }, [items])
+
+  // Pagination logic
+  const totalPages = Math.ceil(logbookData.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentItems = logbookData.slice(startIndex, endIndex)
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)))
+  }
 
   if (loading) {
     return (
-      <section className="px-4 lg:px-6">
-        <div className={`rounded-2xl border border-blue-100/60 bg-white/70 shadow-lg backdrop-blur ${minHeightClass ?? ""}`}>
-          <header className={`flex items-center gap-2 px-5 ${compact ? "py-3" : "py-4"}`}>
-            <div className="bg-teal-500/15 text-teal-700 ring-1 ring-teal-200/60 flex size-8 items-center justify-center rounded-lg">
-              <IconNotebook className="size-4" />
+      <section className="px-2 sm:px-4 lg:px-6">
+        <div className="rounded-xl border border-blue-100/60 bg-white shadow-sm backdrop-blur">
+          <header className="flex items-center gap-2 px-4 py-3">
+            <div className="bg-teal-500/15 text-teal-700 ring-1 ring-teal-200/60 flex size-7 items-center justify-center rounded-lg">
+              <IconNotebook className="size-3.5" />
             </div>
-            <h3 className="text-base font-semibold">Logbook Terbaru</h3>
+            <h3 className="text-sm font-semibold">Logbook Terbaru</h3>
           </header>
-          <div className="px-5 py-8 text-center">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
-            <p className="text-sm text-gray-600">Memuat data...</p>
+          <div className="px-4 py-6 text-center">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mx-auto mb-2"></div>
+            <p className="text-xs text-gray-600">Memuat data...</p>
           </div>
         </div>
       </section>
@@ -117,42 +140,72 @@ export function SectionLatestLogbook({ items, compact = false, minHeightClass }:
   }
 
   return (
-    <section className="px-4 lg:px-6">
-      <div className={`rounded-2xl border border-blue-100/60 bg-white/70 shadow-sm backdrop-blur ${minHeightClass ?? ""}`}>
-        <header className={`flex items-center gap-2 px-5 ${compact ? "py-3" : "py-4"}`}>
-          <div className="bg-teal-500/15 text-teal-700 ring-1 ring-teal-200/60 flex size-8 items-center justify-center rounded-lg">
-            <IconNotebook className="size-4" />
+    <section className="px-2 sm:px-4 lg:px-6">
+      <div className="rounded-xl border border-blue-100/60 bg-white shadow-sm backdrop-blur">
+        <header className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <div className="bg-teal-500/15 text-teal-700 ring-1 ring-teal-200/60 flex size-7 items-center justify-center rounded-lg">
+              <IconNotebook className="size-3.5" />
+            </div>
+            <h3 className="text-sm font-semibold">Logbook Terbaru</h3>
           </div>
-          <h3 className="text-base font-semibold">Logbook Terbaru</h3>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="p-1 rounded hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <IconChevronLeft className="size-4" />
+              </button>
+              <span className="text-xs text-slate-600 px-2">
+                {currentPage} / {totalPages}
+              </span>
+              <button
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="p-1 rounded hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <IconChevronRight className="size-4" />
+              </button>
+            </div>
+          )}
         </header>
-        <ul className="divide-y divide-blue-100/70">
-          {logbookData.map((item) => (
-            <li key={item.id} className={`px-5 ${compact ? "py-3" : "py-4"}`}>
-              <div className="flex items-start justify-between gap-3 min-w-0">
-                <div className="min-w-0 flex-1">
-                  <div className="flex items-center gap-2 mb-1">
-                    <IconUser className="size-3.5 text-gray-500 flex-shrink-0" />
-                    <p className={`font-medium break-words ${compact ? "text-[13px]" : "text-sm"}`}>
-                      {item.studentName}
+        
+        {logbookData.length === 0 ? (
+          <div className="px-4 py-6 text-center text-xs text-muted-foreground">
+            Belum ada data logbook terbaru.
+          </div>
+        ) : (
+          <ul className="divide-y divide-slate-100">
+            {currentItems.map((item) => (
+              <li key={item.id} className="px-4 py-3">
+                <div className="flex items-start justify-between gap-3 min-w-0">
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <IconUser className="size-3 text-gray-500 flex-shrink-0" />
+                      <p className="font-medium text-xs break-words">
+                        {item.studentName}
+                      </p>
+                    </div>
+                    <p className="text-muted-foreground text-xs mb-2 line-clamp-2 break-words">
+                      {item.activity}
+                    </p>
+                    <p className="text-muted-foreground flex items-center gap-1 text-xs">
+                      <IconCalendar className="size-3 flex-shrink-0" />
+                      <span className="text-xs">{item.date}</span>
                     </p>
                   </div>
-                  <p className="text-muted-foreground text-xs mb-2 line-clamp-2 break-words">
-                    {item.activity}
-                  </p>
-                  <p className="text-muted-foreground flex items-center gap-1 text-xs">
-                    <IconCalendar className="size-3.5 flex-shrink-0" />
-                    <span className="whitespace-nowrap">{item.date}</span>
-                  </p>
+                  {item.status && (
+                    <span className={`inline-flex h-5 items-center rounded px-1.5 text-xs font-medium flex-shrink-0 whitespace-nowrap ${getStatusColor(item.status)}`}>
+                      {item.status}
+                    </span>
+                  )}
                 </div>
-                {item.status && (
-                  <span className={`inline-flex h-6 items-center rounded-md px-2 text-xs font-medium flex-shrink-0 whitespace-nowrap ${getStatusColor(item.status)}`}>
-                    {item.status}
-                  </span>
-                )}
-              </div>
-            </li>
-          ))}
-        </ul>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </section>
   )

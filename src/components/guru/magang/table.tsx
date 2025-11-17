@@ -29,8 +29,9 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { IconUser, IconEdit, IconTrash, IconPlus, IconSearch, IconDownload, IconStar } from "@tabler/icons-react" // Ikon
+import { IconUser, IconEdit, IconTrash, IconPlus, IconSearch, IconStar, IconQrcode } from "@tabler/icons-react" // Ikon
 import { toast } from "sonner" // Notifikasi ringan
+import { QrModal } from "./qr-modal" // Modal QR Code
 
 // Bentuk data baris yang dipakai di tabel (hasil mapping dari tabel "magang")
 export type MagangItem = {
@@ -66,6 +67,18 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
   const [pageSize, setPageSize] = React.useState(5)
   const [currentPage, setCurrentPage] = React.useState(1)
   const [statusFilter, setStatusFilter] = React.useState("Semua")
+  
+  // State untuk QR Modal
+  const [qrModalOpen, setQrModalOpen] = React.useState(false)
+  const [selectedQrData, setSelectedQrData] = React.useState<{
+    id: string | number
+    studentName: string
+    kelas?: string
+    jurusan?: string
+    dudi?: string
+    periode?: string
+    status?: string
+  } | null>(null)
 
   // Memuat data dari Supabase dan melakukan normalisasi bentuk data
   const loadData = React.useCallback(async () => {
@@ -205,27 +218,41 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
 
   // Hapus data baris tertentu berdasarkan kolom primary key yang tersedia
   const handleDelete = async (id: string | number, pkColumn?: "id" | "Siswa") => {
-    if (!confirm("Apakah Anda yakin ingin menghapus data ini?")) return
-    try {
-      if (!supabaseBrowser) {
-        toast.error("Konfigurasi database tidak lengkap")
-        return
-      }
-      const targetColumn = pkColumn || "Siswa"
-      const { error } = await supabaseBrowser!
-        .from("magang")
-        .delete()
-        .eq(targetColumn, id)
+    // Tampilkan toast konfirmasi dengan action buttons
+    toast("Apakah Anda yakin ingin menghapus data magang ini?", {
+      action: {
+        label: "Hapus",
+        onClick: async () => {
+          try {
+            if (!supabaseBrowser) {
+              toast.error("Konfigurasi database tidak lengkap")
+              return
+            }
+            const targetColumn = pkColumn || "Siswa"
+            const { error } = await supabaseBrowser!
+              .from("magang")
+              .delete()
+              .eq(targetColumn, id)
 
-      if (error) {
-        throw new Error(`Delete error: ${error.message}`)
-      }
-      toast.success("Data Magang berhasil dihapus")
-      loadData()
-    } catch (error) {
-      const details = error instanceof Error ? error.message : String(error)
-      toast.error(`Gagal menghapus data (${details})`)
-    }
+            if (error) {
+              throw new Error(`Delete error: ${error.message}`)
+            }
+            toast.success("Data magang berhasil dihapus")
+            loadData()
+          } catch (error) {
+            const details = error instanceof Error ? error.message : String(error)
+            toast.error(`Gagal menghapus data (${details})`)
+          }
+        }
+      },
+      cancel: {
+        label: "Batal",
+        onClick: () => {
+          toast.info("Penghapusan dibatalkan")
+        }
+      },
+      duration: 5000
+    })
   }
 
   // Render badge status dengan warna berbeda
@@ -325,88 +352,11 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
           </div>
           <div className="flex gap-2">
             {/* Tambah data magang baru */}
-            <Button size="sm" className="bg-blue-600 hover:bg-blue-700" onClick={onAdd}>
+            <Button size="sm" className="bg-blue-600 hover:bg-blue-700 text-white" onClick={onAdd}>
               <IconPlus className="size-4 mr-2" />
               Siswa
             </Button>
-            {/* Ekspor/print tampilan saat ini ke jendela baru (bisa dicetak ke PDF melalui dialog print browser) */}
-            <Button
-              size="sm"
-              variant="outline"
-              className="border-green-200 text-green-700 hover:bg-green-50"
-              onClick={() => {
-                try {
-                  const printableRows = filteredData.map((r) => ({
-                    Siswa: r.nama_siswa,
-                    NIS: r.nis || "-",
-                    Kelas: r.kelas || "-",
-                    Jurusan: r.jurusan || "-",
-                    DUDI: r.nama_dudi || "-",
-                    Mulai: r.periode_mulai || "-",
-                    Selesai: r.periode_selesai || "-",
-                    Status: r.status || "-",
-                    Nilai: typeof r.nilai === "number" ? r.nilai : "-",
-                  }))
-
-                  // Buat header tabel dari kunci objek baris printable
-                  const tableHead = Object.keys(printableRows[0] || {
-                    Siswa: "",
-                    NIS: "",
-                    Kelas: "",
-                    Jurusan: "",
-                    DUDI: "",
-                    Mulai: "",
-                    Selesai: "",
-                    Status: "",
-                    Nilai: "",
-                  })
-                    .map((h) => `<th style=\"padding:8px;border:1px solid #e5e7eb;text-align:left;\">${h}</th>`) 
-                    .join("")
-
-                  // Buat body tabel dari nilai objek baris printable
-                  const tableBody = printableRows
-                    .map((row) =>
-                      `<tr>` +
-                      Object.values(row)
-                        .map((v) => `<td style=\"padding:8px;border:1px solid #e5e7eb;\">${String(v)}</td>`) 
-                        .join("") +
-                      `</tr>`
-                    )
-                    .join("")
-
-                  const html = `<!doctype html>
-<html>
-<head>
-  <meta charset=\"utf-8\" />
-  <title>Daftar Siswa Magang</title>
-  <style>
-    body { font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial; padding: 24px; color: #0f172a; }
-    h1 { font-size: 20px; margin-bottom: 12px; }
-    table { border-collapse: collapse; width: 100%; font-size: 12px; }
-    thead { background: #f0f9ff; }
-  </style>
-</head>
-<body>
-  <h1>Daftar Siswa Magang</h1>
-  <table>
-    <thead><tr>${tableHead}</tr></thead>
-    <tbody>${tableBody}</tbody>
-  </table>
-  <script>window.print();</script>
-</body>
-</html>`
-
-                  const w = window.open("", "_blank")
-                  if (!w) return
-                  w.document.open()
-                  w.document.write(html)
-                  w.document.close()
-                } catch {}
-              }}
-            >
-              <IconDownload className="size-4 mr-2" />
-              Download PDF
-            </Button>
+            {/* Tombol Download PDF dihapus sesuai permintaan */}
           </div>
         </div>
       </CardHeader>
@@ -512,6 +462,31 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
                     </TableCell>
                     <TableCell>
                       <div className="flex gap-1">
+                        {/* QR Code */}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => {
+                            const periode = item.periode_mulai && item.periode_selesai 
+                              ? `${item.periode_mulai} - ${item.periode_selesai}`
+                              : item.periode_mulai || item.periode_selesai || "-"
+                            
+                            setSelectedQrData({
+                              id: item.id,
+                              studentName: item.nama_siswa,
+                              kelas: item.kelas,
+                              jurusan: item.jurusan,
+                              dudi: item.nama_dudi,
+                              periode: periode,
+                              status: item.status
+                            })
+                            setQrModalOpen(true)
+                          }}
+                          className="h-8 w-8 p-0 text-blue-600 hover:bg-blue-50"
+                          title="QR Code"
+                        >
+                          <IconQrcode className="size-4" />
+                        </Button>
                         {/* Edit data */}
                         <Button
                           size="sm"
@@ -603,8 +578,24 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
           </div>
         )}
       </CardContent>
+      
+      {/* QR Modal */}
+      {selectedQrData && (
+        <QrModal
+          id={selectedQrData.id}
+          open={qrModalOpen}
+          onClose={() => {
+            setQrModalOpen(false)
+            setSelectedQrData(null)
+          }}
+          studentName={selectedQrData.studentName}
+          kelas={selectedQrData.kelas}
+          jurusan={selectedQrData.jurusan}
+          dudi={selectedQrData.dudi}
+          periode={selectedQrData.periode}
+          status={selectedQrData.status}
+        />
+      )}
     </Card>
   )
 }
-
-

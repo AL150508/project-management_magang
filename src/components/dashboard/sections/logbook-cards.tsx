@@ -39,8 +39,28 @@ export function SectionLogbookCards() {
   })
   const [loading, setLoading] = React.useState(true)
 
+  // Load stats dan subscribe ke perubahan realtime
   React.useEffect(() => {
+    // Load data pertama kali
     loadStats()
+    
+    // Subscribe ke perubahan data realtime
+    const subscription = supabaseBrowser
+      .channel('logbook_changes')
+      .on('postgres_changes', 
+        { 
+          event: '*', 
+          schema: 'public', 
+          table: 'logbook'
+        }, 
+        () => loadStats()
+      )
+      .subscribe()
+
+    // Cleanup subscription saat komponen unmount
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [])
 
   // DASHBOARD_LOGBOOK_STATS: Load statistik logbook dari database
@@ -51,28 +71,39 @@ export function SectionLogbookCards() {
       if (!supabaseBrowser) {
         console.warn("Supabase is not configured, using empty stats")
         setStats({ total: 0, disetujui: 0, ditolak: 0, belum_diverifikasi: 0 })
+        setLoading(false)
         return
       }
-      
+
+      // Ambil semua data status dari tabel logbook
       const { data, error } = await supabaseBrowser
         .from("logbook")
         .select("status")
 
       if (error) {
-        console.error("Error loading logbook stats:", error.message || error)
+        console.error("Error loading logbook data:", error)
         setStats({ total: 0, disetujui: 0, ditolak: 0, belum_diverifikasi: 0 })
+        setLoading(false)
         return
       }
 
-      // DASHBOARD_LOGBOOK_STATS: Calculate stats from data
-      const total = data?.length || 0
-      const disetujui = data?.filter(item => item.status === "Disetujui").length || 0
-      const ditolak = data?.filter(item => item.status === "Ditolak").length || 0
-      const belum_diverifikasi = data?.filter(item => item.status === "Belum Diverifikasi").length || 0
+      // Hitung statistik dari data
+      const logbookData = data || []
+      const total = logbookData.length
+      const disetujui = logbookData.filter(d => d.status === 'Disetujui').length
+      const ditolak = logbookData.filter(d => d.status === 'Ditolak').length
+      const belum_diverifikasi = logbookData.filter(d => d.status === 'Belum Diverifikasi').length
 
-      setStats({ total, disetujui, ditolak, belum_diverifikasi })
+      // Update state dengan hasil perhitungan
+      setStats({
+        total,
+        disetujui,
+        ditolak,
+        belum_diverifikasi
+      })
     } catch (error) {
       console.error("Error loading logbook stats:", error instanceof Error ? error.message : error)
+      setStats({ total: 0, disetujui: 0, ditolak: 0, belum_diverifikasi: 0 })
     } finally {
       setLoading(false)
     }

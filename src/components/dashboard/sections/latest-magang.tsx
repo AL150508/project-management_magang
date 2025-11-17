@@ -15,10 +15,22 @@
  * - Mapping fleksibel untuk kompatibilitas berbagai struktur database
  * - Loading state dan error handling
  */
+"use client"
 
-import { IconCalendar, IconSchool } from "@tabler/icons-react"
+import { IconSchool, IconChevronLeft, IconChevronRight, IconClock } from "@tabler/icons-react"
+import { Calendar as IconCalendar } from "lucide-react"
 import * as React from "react"
 import { supabaseBrowser } from "@/lib & database connection/supabase-browser"
+import { Badge } from "@/components/ui/badge"
+
+// Helper function untuk format tanggal
+function formatDate(date: string) {
+  return new Date(date).toLocaleDateString('id-ID', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric'
+  })
+}
 
 type LatestMagangItem = {
   id: string
@@ -32,6 +44,8 @@ type LatestMagangItem = {
 export function SectionLatestMagang({ items, compact = false, minHeightClass }: { items?: LatestMagangItem[]; compact?: boolean; minHeightClass?: string }) {
   const [magangData, setMagangData] = React.useState<LatestMagangItem[]>([])
   const [loading, setLoading] = React.useState(true)
+  const [currentPage, setCurrentPage] = React.useState(1)
+  const itemsPerPage = 2 // Menampilkan 2 items per page agar lebih compact
 
   // REFACTORED_DASHBOARD_SECTION: Load data from database if no items provided
   React.useEffect(() => {
@@ -51,7 +65,7 @@ export function SectionLatestMagang({ items, compact = false, minHeightClass }: 
           return
         }
 
-        // DASHBOARD_LATEST_MAGANG: Ambil 5 data magang terbaru
+        // DASHBOARD_LATEST_MAGANG: Ambil semua data magang untuk pagination
         // Catatan: kita coba sort by created_at; jika kolom tidak tersedia, fallback tanpa order
         let rows: Record<string, unknown>[] | null = null
         try {
@@ -59,7 +73,6 @@ export function SectionLatestMagang({ items, compact = false, minHeightClass }: 
             .from("magang")
             .select("*")
             .order("created_at", { ascending: false })
-            .limit(5)
           if (error) throw error
           rows = data as Record<string, unknown>[] | null
         } catch {
@@ -68,26 +81,24 @@ export function SectionLatestMagang({ items, compact = false, minHeightClass }: 
               .from("magang")
               .select("*")
               .order("id", { ascending: false })
-              .limit(5)
             if (error) throw error
             rows = data as Record<string, unknown>[] | null
           } catch {
             const { data, error } = await supabaseBrowser
               .from("magang")
               .select("*")
-              .limit(5)
             if (error) throw error
             rows = data as Record<string, unknown>[] | null
           }
         }
 
-        // DASHBOARD_MAGANG_MAPPING: Mapping fleksibel: sesuaikan berbagai kemungkinan nama kolom
+        // DASHBOARD_MAGANG_MAPPING: Mapping data dari tabel magang dengan kolom yang benar
         const mapped: LatestMagangItem[] = (rows || []).map((r, idx) => {
-          const studentName = (r["Siswa"] as string) || (r["nama_siswa"] as string) || (r["siswa"] as string) || `Siswa ${idx + 1}`
-          const companyName = (r["DUDI"] as string) || (r["nama_dudi"] as string) || (r["nama_perusahaan"] as string) || "-"
-          const startDate = (r["Mulai"] as string) || (r["periode_mulai"] as string) || "-"
-          const endDate = (r["Selesai"] as string) || (r["periode_selesai"] as string) || "-"
-          const rawStatus = (r["Status"] as string) || (r["status"] as string) || "Pending"
+          const studentName = (r["Siswa"] as string) || (r["id"] ? `Magang #${r["id"]}` : `Siswa ${idx + 1}`)
+          const companyName = (r["nama_perusahaan"] as string) || (r["DUDI"] as string) || "-"
+          const startDate = (r["periode_mulai"] as string) || (r["Mulai"] as string) || "-"
+          const endDate = (r["periode_selesai"] as string) || (r["Selesai"] as string) || "-"
+          const rawStatus = (r["status"] as string) || "Pending"
           const normalizedStatus: LatestMagangItem["status"] = rawStatus.toLowerCase() === "aktif"
             ? "Aktif"
             : rawStatus.toLowerCase() === "selesai"
@@ -95,11 +106,11 @@ export function SectionLatestMagang({ items, compact = false, minHeightClass }: 
             : "Tertunda"
 
           return {
-            id: String(r["id"] ?? r["Siswa"] ?? `${studentName}-${idx}`),
+            id: String(r["id"] ?? `${studentName}-${idx}`),
             studentName,
             companyName,
-            startDate,
-            endDate,
+            startDate: formatDate(startDate),
+            endDate: formatDate(endDate),
             status: normalizedStatus,
           }
         })
@@ -131,52 +142,87 @@ export function SectionLatestMagang({ items, compact = false, minHeightClass }: 
     }
   }, [items])
 
+  // Pagination logic
+  const totalPages = Math.ceil(magangData.length / itemsPerPage)
+  const startIndex = (currentPage - 1) * itemsPerPage
+  const endIndex = startIndex + itemsPerPage
+  const currentItems = magangData.slice(startIndex, endIndex)
+
+  const goToPage = (page: number) => {
+    setCurrentPage(Math.max(1, Math.min(page, totalPages)))
+  }
+
   if (loading) {
     return (
-      <section className="px-4 lg:px-6">
-        <div className={`rounded-2xl border border-blue-100/60 bg-white/70 shadow-lg backdrop-blur ${minHeightClass ?? ""}`}>
-          <header className={`flex items-center gap-2 px-5 ${compact ? "py-3" : "py-4"}`}>
-            <div className="bg-sky-500/15 text-sky-700 ring-1 ring-sky-200/60 flex size-8 items-center justify-center rounded-lg">
-              <IconSchool className="size-4" />
+      <section className="px-2 sm:px-4 lg:px-6">
+        <div className="rounded-xl border border-blue-100/60 bg-white shadow-sm backdrop-blur">
+          <header className="flex items-center gap-2 px-4 py-3">
+            <div className="bg-sky-500/15 text-sky-700 ring-1 ring-sky-200/60 flex size-7 items-center justify-center rounded-lg">
+              <IconSchool className="size-3.5" />
             </div>
-            <h3 className="text-base font-semibold">Magang Terbaru</h3>
+            <h3 className="text-sm font-semibold">Magang Terbaru</h3>
           </header>
-          <div className="px-5 py-8 text-center">
-            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-600 mx-auto mb-2"></div>
-            <p className="text-sm text-gray-600">Memuat data...</p>
+          <div className="px-4 py-6 text-center">
+            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mx-auto mb-2"></div>
+            <p className="text-xs text-gray-600">Memuat data...</p>
           </div>
         </div>
       </section>
     )
   }
+
   return (
-    <section className="px-4 lg:px-6">
-      <div className={`rounded-2xl border border-blue-100/60 bg-white/70 shadow-sm backdrop-blur ${minHeightClass ?? ""}`}>
-        <header className={`flex items-center gap-2 px-5 ${compact ? "py-3" : "py-4"}`}>
-          <div className="bg-sky-500/15 text-sky-700 ring-1 ring-sky-200/60 flex size-8 items-center justify-center rounded-lg">
-            <IconSchool className="size-4" />
+    <section className="px-2 sm:px-4 lg:px-6">
+      <div className="rounded-xl border border-blue-100/60 bg-white shadow-sm backdrop-blur">
+        <header className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
+          <div className="flex items-center gap-2">
+            <div className="bg-sky-500/15 text-sky-700 ring-1 ring-sky-200/60 flex size-7 items-center justify-center rounded-lg">
+              <IconSchool className="size-3.5" />
+            </div>
+            <h3 className="text-sm font-semibold">Magang Terbaru</h3>
           </div>
-          <h3 className="text-base font-semibold">Magang Terbaru</h3>
+          {totalPages > 1 && (
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => goToPage(currentPage - 1)}
+                disabled={currentPage === 1}
+                className="p-1 rounded hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <IconChevronLeft className="size-4" />
+              </button>
+              <span className="text-xs text-slate-600 px-2">
+                {currentPage} / {totalPages}
+              </span>
+              <button
+                onClick={() => goToPage(currentPage + 1)}
+                disabled={currentPage === totalPages}
+                className="p-1 rounded hover:bg-slate-100 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <IconChevronRight className="size-4" />
+              </button>
+            </div>
+          )}
         </header>
+        
         {magangData.length === 0 ? (
-          <div className={`px-5 ${compact ? "py-6" : "py-10"} text-center text-sm text-muted-foreground`}>
+          <div className="px-4 py-6 text-center text-xs text-muted-foreground">
             Belum ada data magang terbaru.
           </div>
         ) : (
-          <ul className="divide-y divide-blue-100/70">
-            {magangData.map((item) => (
-              <li key={item.id} className={`px-5 ${compact ? "py-3" : "py-4"}`}>
+          <ul className="divide-y divide-slate-100">
+            {currentItems.map((item) => (
+              <li key={item.id} className="px-4 py-3">
                 <div className="flex items-start justify-between gap-3 min-w-0">
                   <div className="min-w-0 flex-1">
-                    <p className={`font-medium break-words ${compact ? "text-[13px]" : "text-sm"}`}>{item.studentName}</p>
-                    <p className="text-muted-foreground text-xs break-words">{item.companyName}</p>
+                    <p className="font-medium text-xs break-words">{item.studentName}</p>
+                    <p className="text-muted-foreground text-xs break-words mt-0.5">{item.companyName}</p>
                     <p className="text-muted-foreground mt-1 flex items-center gap-1 text-xs">
-                      <IconCalendar className="size-3.5 flex-shrink-0" />
-                      <span className="whitespace-nowrap">{item.startDate} - {item.endDate}</span>
+                      <IconCalendar className="size-3 flex-shrink-0" />
+                      <span className="text-xs">{item.startDate} - {item.endDate}</span>
                     </p>
                   </div>
                   {item.status && (
-                    <span className="bg-green-500/10 text-green-700 ring-1 ring-green-200/60 inline-flex h-6 items-center rounded-md px-2 text-xs font-medium flex-shrink-0 whitespace-nowrap">
+                    <span className="bg-green-500/10 text-green-700 ring-1 ring-green-200/60 inline-flex h-5 items-center rounded px-1.5 text-xs font-medium flex-shrink-0 whitespace-nowrap">
                       {item.status}
                     </span>
                   )}

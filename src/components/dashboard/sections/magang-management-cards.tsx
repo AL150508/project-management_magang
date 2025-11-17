@@ -97,7 +97,7 @@ export function MagangManagementCards({ onRefresh }: MagangManagementCardsProps)
         try {
           return {
             id: item.id,
-            nama_siswa: item.nama_siswa || "",
+            nama_siswa: item.Siswa || item.nama_siswa || "",
             nis: item.nis || "",
             kelas: item.kelas || "",
             jurusan: item.jurusan || "",
