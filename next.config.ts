@@ -15,7 +15,7 @@ const withPWA = withPWAInit({
       {
         // Offline fallback untuk navigation requests
         urlPattern: ({ request }) => request.mode === 'navigate',
-        handler: "NetworkOnly",
+        handler: "NetworkFirst",
         options: {
           cacheName: "pages-cache",
           networkTimeoutSeconds: 3,
