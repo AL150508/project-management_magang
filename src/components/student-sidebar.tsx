@@ -11,13 +11,14 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { ChevronDown, LogOut, Settings, User } from "lucide-react"
 import { IconHome, IconBuilding, IconSchool, IconNotebook, IconX, IconMenu2 } from "@tabler/icons-react"
 import { cn, showConfirmation, showSuccess } from "@/lib & database connection/utils"
 import { useAuth } from "@/context/auth-context"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
+import { NotificationToggle } from "@/components/notification-toggle"
 
 // Properti yang diperlukan Sidebar Siswa
 interface StudentSidebarProps {
@@ -59,6 +60,7 @@ const menuItems = [
 
 export function StudentSidebar({ activeItem, onItemClick }: StudentSidebarProps) {
   const pathname = usePathname() // Ambil pathname saat ini untuk sinkronisasi aktif item
+  const router = useRouter()
   const { user, logout } = useAuth()
   const [isExpanded, setIsExpanded] = React.useState(true) // Default expanded di desktop
   const [isMobile, setIsMobile] = React.useState(false)
@@ -201,20 +203,20 @@ export function StudentSidebar({ activeItem, onItemClick }: StudentSidebarProps)
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="w-full flex items-center gap-3 p-3 rounded-lg bg-slate-50 hover:bg-slate-100 transition-colors"
+                    className="w-full flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
                   >
-                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-xs">
+                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
                       {user?.fullName?.charAt(0)?.toUpperCase() || user?.username?.charAt(0)?.toUpperCase() || "A"}
                     </div>
                     <div className="flex-1 min-w-0 text-left">
-                      <p className="text-sm font-medium text-slate-800 truncate">
+                      <p className="text-sm font-medium text-gray-900 truncate">
                         {user?.fullName || user?.username || "alvasya_RPL1"}
                       </p>
-                      <p className="text-xs text-slate-500">
+                      <p className="text-xs text-gray-600">
                         @{user?.username || "alvasya"}
                       </p>
                     </div>
-                    <ChevronDown className="h-4 w-4 text-slate-400" />
+                    <ChevronDown className="h-4 w-4 text-gray-500 flex-shrink-0" />
                   </Button>
                 </DropdownMenuTrigger>
                 
@@ -235,15 +237,27 @@ export function StudentSidebar({ activeItem, onItemClick }: StudentSidebarProps)
                   
                   <DropdownMenuSeparator />
                   
-                  <DropdownMenuItem className="cursor-pointer">
+                  <DropdownMenuItem 
+                    className="cursor-pointer"
+                    onClick={() => router.push('/profile')}
+                  >
                     <User className="h-4 w-4 mr-2" />
                     Profile
                   </DropdownMenuItem>
                   
-                  <DropdownMenuItem className="cursor-pointer">
+                  <DropdownMenuItem 
+                    className="cursor-pointer"
+                    onClick={() => router.push('/profile')}
+                  >
                     <Settings className="h-4 w-4 mr-2" />
                     Pengaturan
                   </DropdownMenuItem>
+                  
+                  <DropdownMenuSeparator />
+                  
+                  <div className="px-2 py-2">
+                    <NotificationToggle />
+                  </div>
                   
                   <DropdownMenuSeparator />
                   
@@ -298,15 +312,27 @@ export function StudentSidebar({ activeItem, onItemClick }: StudentSidebarProps)
                   
                   <DropdownMenuSeparator />
                   
-                  <DropdownMenuItem className="cursor-pointer">
+                  <DropdownMenuItem 
+                    className="cursor-pointer"
+                    onClick={() => router.push('/profile')}
+                  >
                     <User className="h-4 w-4 mr-2" />
                     Profile
                   </DropdownMenuItem>
                   
-                  <DropdownMenuItem className="cursor-pointer">
+                  <DropdownMenuItem 
+                    className="cursor-pointer"
+                    onClick={() => router.push('/profile')}
+                  >
                     <Settings className="h-4 w-4 mr-2" />
                     Pengaturan
                   </DropdownMenuItem>
+                  
+                  <DropdownMenuSeparator />
+                  
+                  <div className="px-2 py-2">
+                    <NotificationToggle />
+                  </div>
                   
                   <DropdownMenuSeparator />
                   

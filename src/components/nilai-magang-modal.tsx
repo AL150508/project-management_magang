@@ -1,6 +1,9 @@
 "use client"
 
 import * as React from "react"
+import { supabaseBrowser } from "@/lib & database connection/supabase-browser"
+import { sendPushToUser } from "@/lib & database connection/send-push"
+import { toast } from "sonner"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -61,14 +64,31 @@ export function NilaiMagangModal({
     setLoading(true)
     
     try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000))
+      if (!supabaseBrowser) throw new Error("Supabase not configured")
       
-      console.log("Saving nilai:", {
-        id: magangData.id,
-        nilai: nilaiNumber,
-        catatan: catatan
-      })
+      // Update nilai in magang table
+      const { error } = await supabaseBrowser
+        .from("magang")
+        .update({ nilai: nilaiNumber })
+        .eq("id", magangData.id)
+      
+      if (error) throw error
+      
+      // Get siswa user_id to send push notification
+      const { data: siswaData } = await supabaseBrowser
+        .from('users')
+        .select('id')
+        .eq('full_name', magangData.namaSiswa)
+        .single()
+      
+      // Send push notification to siswa
+      if (siswaData?.id) {
+        sendPushToUser(siswaData.id, {
+          title: '⭐ Nilai Magang Keluar',
+          body: `Nilai magang Anda di ${magangData.namaPerusahaan}: ${nilaiNumber}/100`,
+          url: '/magang'
+        }).catch(err => console.error('Push notification error:', err))
+      }
       
       toast.success("Nilai berhasil disimpan")
       onSuccess?.()

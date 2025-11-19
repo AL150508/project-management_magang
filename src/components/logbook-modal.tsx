@@ -2,6 +2,7 @@
 
 import * as React from "react"
 import { supabaseBrowser } from "@/lib & database connection/supabase-browser"
+import { sendPushToRole } from "@/lib & database connection/send-push"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -143,6 +144,13 @@ export function LogbookModal({ open, onOpenChange, logbook, onSuccess, mode, def
         }
 
         showSuccess("Data logbook berhasil ditambahkan")
+        
+        // Send push notification to all guru
+        sendPushToRole('guru', {
+          title: '📖 Logbook Baru',
+          body: `${formData.nama_siswa} mengirim logbook: ${formData.kegiatan.substring(0, 50)}...`,
+          url: '/logbook'
+        }).catch(err => console.error('Push notification error:', err))
       }
 
       onSuccess()

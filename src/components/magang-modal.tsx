@@ -3,6 +3,7 @@
 import * as React from "react"
 import { supabaseBrowser } from "@/lib & database connection/supabase-browser"
 import { useAuth } from "@/context/auth-context"
+import { sendPushToRole } from "@/lib & database connection/send-push"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -49,6 +50,9 @@ type MagangModalProps = {
 
 // Komponen modal untuk menambah/edit data siswa magang
 export function MagangModal({ open, onOpenChange, magang, onSuccess }: MagangModalProps) {
+  // Get user from auth context
+  const { user } = useAuth()
+  
   // State untuk data form
   const [formData, setFormData] = React.useState({
     nama_siswa: "", // Nama siswa
@@ -184,13 +188,9 @@ export function MagangModal({ open, onOpenChange, magang, onSuccess }: MagangMod
 
       // Get student name
       let studentName = formData.nama_siswa
-      console.log("User data:", { user, fullName: user?.fullName })
       if (!magang && user?.fullName) {
         // For new entries, use user's fullName from auth context
         studentName = user.fullName
-        console.log("Using fullName from user:", studentName)
-      } else {
-        console.log("Using formData.nama_siswa:", studentName)
       }
 
       // Format data sesuai struktur database
@@ -206,8 +206,6 @@ export function MagangModal({ open, onOpenChange, magang, onSuccess }: MagangMod
         status: formData.status, // Status magang
         nilai: formData.nilai ? Number(formData.nilai) : null, // Konversi nilai ke number
       }
-
-      console.log("Submitting magang payload:", dataToSubmit)
 
       if (magang) {
         // Mode edit: Update data yang sudah ada
@@ -225,6 +223,25 @@ export function MagangModal({ open, onOpenChange, magang, onSuccess }: MagangMod
         }
 
         toast.success("Data siswa magang berhasil diperbarui")
+        
+        // Send push notification if status changed to Aktif (approved)
+        if (magang.status === 'Pending' && formData.status === 'Aktif') {
+          // Get siswa user_id from users table
+          const { data: siswaData } = await supabaseBrowser
+            .from('users')
+            .select('id')
+            .eq('full_name', formData.nama_siswa)
+            .single()
+          
+          if (siswaData?.id) {
+            const { sendPushToUser } = await import('@/lib & database connection/send-push')
+            sendPushToUser(siswaData.id, {
+              title: '✅ Magang Disetujui',
+              body: `Magang Anda di ${formData.nama_dudi} telah disetujui!`,
+              url: '/magang'
+            }).catch(err => console.error('Push notification error:', err))
+          }
+        }
       } else {
         // Mode tambah: Insert data baru
         const { error, status, statusText } = await supabaseBrowser
@@ -241,6 +258,13 @@ export function MagangModal({ open, onOpenChange, magang, onSuccess }: MagangMod
         }
 
         toast.success("Data siswa magang berhasil ditambahkan")
+        
+        // Send push notification to all guru/admin
+        sendPushToRole('guru', {
+          title: '📝 Pendaftaran Magang Baru',
+          body: `${formData.nama_siswa} telah mendaftar magang di ${formData.nama_dudi}`,
+          url: '/magang'
+        }).catch(err => console.error('Push notification error:', err))
       }
 
       // Callback sukses dan tutup modal

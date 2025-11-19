@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Service Worker Cleanup</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #1e293b;
+      color: #e2e8f0;
+    }
+    .card {
+      background: #334155;
+      padding: 30px;
+      border-radius: 12px;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px 5px;
+    }
+    button:hover { background: #1d4ed8; }
+    .success { color: #86efac; }
+    .error { color: #fca5a5; }
+    #log {
+      background: #1e293b;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 15px 0;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🧹 Service Worker Cleanup</h1>
+    <p>Use this to completely reset service workers and cache</p>
+    
+    <button onclick="fullCleanup()">🔥 FULL CLEANUP (Recommended)</button>
+    <button onclick="location.href='/'">↩️ Back to App</button>
+    
+    <div id="log"></div>
+  </div>
+
+  <script>
+    function log(msg, type = 'info') {
+      const logDiv = document.getElementById('log');
+      const color = type === 'success' ? '#86efac' : type === 'error' ? '#fca5a5' : '#cbd5e1';
+      logDiv.innerHTML += `<div style="color: ${color}">${msg}</div>`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+      console.log(msg);
+    }
+
+    async function fullCleanup() {
+      log('🚀 Starting full cleanup...', 'info');
+      
+      try {
+        // 1. Unregister all service workers
+        log('1️⃣ Unregistering service workers...', 'info');
+        const registrations = await navigator.serviceWorker.getRegistrations();
+        let swCount = 0;
+        for (let reg of registrations) {
+          await reg.unregister();
+          swCount++;
+          log(`   ✅ Unregistered: ${reg.scope}`, 'success');
+        }
+        log(`   Total unregistered: ${swCount} service worker(s)`, 'success');
+
+        // 2. Clear all caches
+        log('2️⃣ Clearing all caches...', 'info');
+        const cacheNames = await caches.keys();
+        let cacheCount = 0;
+        for (let name of cacheNames) {
+          await caches.delete(name);
+          cacheCount++;
+          log(`   ✅ Deleted cache: ${name}`, 'success');
+        }
+        log(`   Total cleared: ${cacheCount} cache(s)`, 'success');
+
+        // 3. Clear localStorage
+        log('3️⃣ Clearing localStorage...', 'info');
+        localStorage.clear();
+        log('   ✅ localStorage cleared', 'success');
+
+        // 4. Clear sessionStorage
+        log('4️⃣ Clearing sessionStorage...', 'info');
+        sessionStorage.clear();
+        log('   ✅ sessionStorage cleared', 'success');
+
+        // 5. Check notification permission
+        log('5️⃣ Checking notification permission...', 'info');
+        const perm = Notification.permission;
+        log(`   Current permission: ${perm}`, perm === 'granted' ? 'success' : 'error');
+
+        log('', 'info');
+        log('✅ ✅ ✅ CLEANUP COMPLETE! ✅ ✅ ✅', 'success');
+        log('', 'info');
+        log('Next steps:', 'info');
+        log('1. Close this tab', 'info');
+        log('2. Close ALL browser windows', 'info');
+        log('3. Reopen browser', 'info');
+        log('4. Go to http://localhost:3000', 'info');
+        log('5. Hard refresh with Ctrl+Shift+R', 'info');
+        log('6. Test "Aktifkan Notifikasi"', 'info');
+        
+        // Auto redirect after 5 seconds
+        log('', 'info');
+        log('Redirecting to homepage in 5 seconds...', 'info');
+        setTimeout(() => {
+          window.location.href = '/';
+        }, 5000);
+
+      } catch (error) {
+        log(`❌ Error during cleanup: ${error.message}`, 'error');
+        console.error(error);
+      }
+    }
+
+    // Auto-run on load
+    log('Ready to cleanup. Click the button above to start.', 'info');
+    log('', 'info');
+  </script>
+</body>
+</html>

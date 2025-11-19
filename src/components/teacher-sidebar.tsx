@@ -11,13 +11,15 @@
 
 import * as React from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { IconHome, IconBuilding, IconSchool, IconNotebook, IconX, IconMenu2, IconChalkboard } from "@tabler/icons-react"
 import { ChevronDown, LogOut, Settings, User } from "lucide-react"
 import { cn, showConfirmation, showSuccess } from "@/lib & database connection/utils"
 import { useAuth } from "@/context/auth-context"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { Button } from "@/components/ui/button"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { NotificationToggle } from "@/components/notification-toggle"
 
 // Properti yang diperlukan Sidebar Guru
 interface TeacherSidebarProps {
@@ -59,6 +61,7 @@ const menuItems = [
 
 export function TeacherSidebar({ activeItem, onItemClick }: TeacherSidebarProps) {
   const pathname = usePathname() // Ambil pathname saat ini untuk sinkronisasi aktif item
+  const router = useRouter()
   const { user, logout } = useAuth()
   const [isExpanded, setIsExpanded] = React.useState(true) // Default expanded di desktop
   const [isMobile, setIsMobile] = React.useState(false)
@@ -211,24 +214,38 @@ export function TeacherSidebar({ activeItem, onItemClick }: TeacherSidebarProps)
                 <DropdownMenuTrigger asChild>
                   <Button
                     variant="ghost"
-                    className="w-full flex items-center gap-3 p-3 rounded-xl bg-gray-50 hover:bg-gray-100 transition-colors"
+                    className="w-full flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
                   >
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
-                      {user?.fullName?.charAt(0)?.toUpperCase() || "G"}
-                    </div>
+                    <Avatar className="h-10 w-10 flex-shrink-0">
+                      <AvatarImage 
+                        src={user?.avatar ? `${user.avatar}?t=${Date.now()}` : undefined} 
+                        alt={user?.fullName || "Guru"}
+                        key={user?.avatar}
+                      />
+                      <AvatarFallback className="bg-blue-600 text-white text-sm font-semibold">
+                        {user?.fullName?.charAt(0)?.toUpperCase() || "G"}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="flex-1 min-w-0 text-left">
-                      <p className="text-sm font-semibold text-gray-800 truncate">Guru Admin</p>
-                      <p className="text-xs text-gray-500">{user?.fullName || user?.username || "Administrator"}</p>
+                      <p className="text-sm font-semibold text-gray-900 truncate">Guru Admin</p>
+                      <p className="text-xs text-gray-600 truncate">{user?.fullName || user?.username || "Administrator"}</p>
                     </div>
-                    <ChevronDown className="h-4 w-4 text-gray-400" />
+                    <ChevronDown className="h-4 w-4 text-gray-500 flex-shrink-0" />
                   </Button>
                 </DropdownMenuTrigger>
                 
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="flex items-center gap-3 p-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
-                      {user?.fullName?.charAt(0)?.toUpperCase() || "G"}
-                    </div>
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage 
+                        src={user?.avatar ? `${user.avatar}?t=${Date.now()}` : undefined} 
+                        alt={user?.fullName || "Guru"}
+                        key={user?.avatar}
+                      />
+                      <AvatarFallback className="bg-blue-600 text-white text-sm font-semibold">
+                        {user?.fullName?.charAt(0)?.toUpperCase() || "G"}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="flex flex-col">
                       <span className="text-sm font-semibold text-gray-800">Guru Admin</span>
                       <span className="text-xs text-gray-500">{user?.fullName || user?.username || "Administrator"}</span>
@@ -237,15 +254,27 @@ export function TeacherSidebar({ activeItem, onItemClick }: TeacherSidebarProps)
                   
                   <DropdownMenuSeparator />
                   
-                  <DropdownMenuItem className="cursor-pointer">
+                  <DropdownMenuItem 
+                    className="cursor-pointer"
+                    onClick={() => router.push('/profile')}
+                  >
                     <User className="h-4 w-4 mr-2" />
                     Profile
                   </DropdownMenuItem>
                   
-                  <DropdownMenuItem className="cursor-pointer">
+                  <DropdownMenuItem 
+                    className="cursor-pointer"
+                    onClick={() => router.push('/profile')}
+                  >
                     <Settings className="h-4 w-4 mr-2" />
                     Pengaturan
                   </DropdownMenuItem>
+                  
+                  <DropdownMenuSeparator />
+                  
+                  <div className="px-2 py-2">
+                    <NotificationToggle />
+                  </div>
                   
                   <DropdownMenuSeparator />
                   
@@ -277,17 +306,33 @@ export function TeacherSidebar({ activeItem, onItemClick }: TeacherSidebarProps)
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 text-white font-semibold text-sm shadow-sm p-0"
+                    className="w-10 h-10 rounded-full p-0 hover:opacity-80 transition-opacity"
                   >
-                    {user?.fullName?.charAt(0)?.toUpperCase() || "G"}
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage 
+                        src={user?.avatar ? `${user.avatar}?t=${Date.now()}` : undefined} 
+                        alt={user?.fullName || "Guru"}
+                        key={user?.avatar}
+                      />
+                      <AvatarFallback className="bg-blue-600 text-white text-sm font-semibold">
+                        {user?.fullName?.charAt(0)?.toUpperCase() || "G"}
+                      </AvatarFallback>
+                    </Avatar>
                   </Button>
                 </DropdownMenuTrigger>
                 
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="flex items-center gap-3 p-3">
-                    <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white font-semibold text-sm shadow-sm">
-                      {user?.fullName?.charAt(0)?.toUpperCase() || "G"}
-                    </div>
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage 
+                        src={user?.avatar ? `${user.avatar}?t=${Date.now()}` : undefined} 
+                        alt={user?.fullName || "Guru"}
+                        key={user?.avatar}
+                      />
+                      <AvatarFallback className="bg-blue-600 text-white text-sm font-semibold">
+                        {user?.fullName?.charAt(0)?.toUpperCase() || "G"}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="flex flex-col">
                       <span className="text-sm font-semibold text-gray-800">Guru Admin</span>
                       <span className="text-xs text-gray-500">{user?.fullName || user?.username || "Administrator"}</span>
@@ -296,15 +341,27 @@ export function TeacherSidebar({ activeItem, onItemClick }: TeacherSidebarProps)
                   
                   <DropdownMenuSeparator />
                   
-                  <DropdownMenuItem className="cursor-pointer">
+                  <DropdownMenuItem 
+                    className="cursor-pointer"
+                    onClick={() => router.push('/profile')}
+                  >
                     <User className="h-4 w-4 mr-2" />
                     Profile
                   </DropdownMenuItem>
                   
-                  <DropdownMenuItem className="cursor-pointer">
+                  <DropdownMenuItem 
+                    className="cursor-pointer"
+                    onClick={() => router.push('/profile')}
+                  >
                     <Settings className="h-4 w-4 mr-2" />
                     Pengaturan
                   </DropdownMenuItem>
+                  
+                  <DropdownMenuSeparator />
+                  
+                  <div className="px-2 py-2">
+                    <NotificationToggle />
+                  </div>
                   
                   <DropdownMenuSeparator />
                   

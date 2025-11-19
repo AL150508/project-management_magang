@@ -154,7 +154,7 @@ export default function MagangPage() {
           onOpenChange={setNilaiModalOpen}
           magangData={selectedNilaiMagang ? {
             id: selectedNilaiMagang.id,
-            namaSiswa: selectedNilaiMagang.Siswa || selectedNilaiMagang.nama_siswa,
+            namaSiswa: selectedNilaiMagang.nama_siswa || "",
             namaPerusahaan: selectedNilaiMagang.nama_dudi || "",
             periodeMulai: selectedNilaiMagang.periode_mulai || "",
             periodeSelesai: selectedNilaiMagang.periode_selesai || "",

@@ -1,6 +1,6 @@
 {
   "name": "Manajemen Magang - SMK Brantas Karangkates",
-  "short_name": "Magang Portal",
+  "short_name": "Manajemen Magang",
   "description": "Sistem pelaporan magang siswa SMK Brantas Karangkates",
   "start_url": "/",
   "display": "standalone",

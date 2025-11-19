@@ -7,6 +7,7 @@ import { TeacherSidebar } from "@/components/teacher-sidebar"
 import { SectionCards } from "@/components/section-cards"
 import { SectionLatestMagang, SectionLatestLogbook, SectionDudiAktif } from "@/components/dashboard/sections"
 import { SectionProgressOverview } from "@/components/section-progress-overview"
+import { DashboardSkeleton } from "@/components/dashboard-skeleton"
 
 // Komponen utama halaman dashboard
 export default function Page() {
@@ -16,12 +17,21 @@ export default function Page() {
   const [activeItem, setActiveItem] = React.useState("dashboard")
   // State untuk cek apakah komponen sudah ter-mount (untuk mencegah error hydration)
   const [mounted, setMounted] = React.useState(false)
+  // State untuk loading data dashboard
+  const [isLoading, setIsLoading] = React.useState(true)
 
   // userName tidak digunakan lagi karena profile sudah dipindah ke sidebar
 
-  // Menandai komponen sudah ter-mount
+  // Menandai komponen sudah ter-mount dan simulate data loading
   React.useEffect(() => {
     setMounted(true)
+    
+    // Quick loading transition (reduced to not block real data)
+    const timer = setTimeout(() => {
+      setIsLoading(false)
+    }, 200)
+    
+    return () => clearTimeout(timer)
   }, [])
 
   // Fungsi untuk mengganti role user (guru/siswa)
@@ -73,19 +83,24 @@ export default function Page() {
                 </p>
             </div>
             
-          <div className="flex flex-col gap-4 md:gap-6">
-                <SectionCards />
-            <div className="grid gap-4 md:gap-6 md:grid-cols-3 items-start">
-              <div className="md:col-span-2 flex flex-col gap-4 md:gap-6">
-                      <SectionLatestMagang compact minHeightClass="min-h-[380px]" />
-                      <SectionLatestLogbook minHeightClass="min-h-[380px]" />
-                    </div>
-              <div className="flex flex-col gap-4 md:gap-6">
-                      <SectionProgressOverview />
-                      <SectionDudiAktif />
+          {/* Show skeleton while loading */}
+          {isLoading ? (
+            <DashboardSkeleton />
+          ) : (
+            <div className="flex flex-col gap-4 md:gap-6">
+                  <SectionCards />
+              <div className="grid gap-4 md:gap-6 md:grid-cols-3 items-start">
+                <div className="md:col-span-2 flex flex-col gap-4 md:gap-6">
+                        <SectionLatestMagang compact minHeightClass="min-h-[380px]" />
+                        <SectionLatestLogbook minHeightClass="min-h-[380px]" />
+                      </div>
+                <div className="flex flex-col gap-4 md:gap-6">
+                        <SectionProgressOverview />
+                        <SectionDudiAktif />
+                      </div>
                     </div>
                   </div>
-                </div>
+          )}
         </main>
       </div>
     </div>

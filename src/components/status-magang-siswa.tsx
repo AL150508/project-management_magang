@@ -39,58 +39,57 @@ export function StatusMagangSiswa({ data, studentName }: StatusMagangSiswaProps)
         setLoading(true)
         if (!supabaseBrowser) return
         
-        // Dapatkan user ID dari Supabase Auth (dengan fallback)
+        // Dapatkan user ID dari Supabase Auth
         const { data: { user } } = await supabaseBrowser.auth.getUser()
         
-        // Fallback: jika tidak ada user ID, gunakan nama siswa sebagai identifier
-        let userId = user?.id
-        if (!userId) {
-          console.log("⚠️ User tidak terautentikasi, menggunakan nama siswa sebagai fallback")
-          userId = studentName
+        if (!user) {
+          console.log("⚠️ User tidak terautentikasi")
+          setMagangData(null)
+          return
         }
+        
+        const userId = user.id
 
-        // Ambil data terbaru terlebih dahulu
+        // Ambil data magang untuk user ini
         let rows: Record<string, unknown>[] | null = null
         try {
+          // Try dengan filter user_id first
           const { data, error } = await supabaseBrowser
             .from("magang")
             .select("*")
+            .eq("user_id", userId)
             .order("created_at", { ascending: false })
-            .limit(50)
+            .limit(10)
+          
           if (error) throw error
           rows = data as Record<string, unknown>[] | null
-        } catch {
-          try {
-            const { data, error } = await supabaseBrowser
+          
+          // Jika tidak ada data dengan user_id, fallback ke nama siswa
+          if (!rows || rows.length === 0) {
+            const { data: fallbackData } = await supabaseBrowser
               .from("magang")
               .select("*")
-              .order("id", { ascending: false })
-              .limit(50)
-            if (error) throw error
-            rows = data as Record<string, unknown>[] | null
-          } catch {
+              .or(`Siswa.eq.${studentName},nama_siswa.eq.${studentName}`)
+              .order("created_at", { ascending: false })
+              .limit(10)
+            rows = fallbackData as Record<string, unknown>[] | null
+          }
+        } catch (err) {
+          console.error("Error fetching magang data:", err)
+          // Fallback tanpa filter
+          try {
             const { data } = await supabaseBrowser
               .from("magang")
               .select("*")
               .limit(50)
             rows = data as Record<string, unknown>[] | null
+          } catch {
+            rows = null
           }
         }
 
-        // Cari baris milik siswa berdasarkan user ID atau nama siswa
-        const row = (rows || []).find((r: Record<string, unknown>) => {
-          // Coba berbagai kemungkinan nama kolom untuk user ID
-          const possibleUserIds = [
-            r["Siswa"] as string,
-            r["nama_siswa"] as string,
-            r["siswa"] as string
-          ].filter(Boolean)
-          
-          // Kriteria cocok jika sama dengan userId (jika ada) ATAU sama dengan nama siswa yang tampil
-          // Ini penting karena proses pendaftaran bisa menyimpan 'Siswa' sebagai nama, bukan user UUID
-          const targets = [String(userId || ""), String(studentName || "")].filter(Boolean)
-          return possibleUserIds.some(id => targets.includes(String(id || "")))
-        }) || (rows && rows[0])
+        // Ambil row pertama (sudah difilter by user_id di query)
+        const row = rows && rows.length > 0 ? rows[0] : null
         if (!row) {
           if (!isMounted) return
           setMagangData(null)

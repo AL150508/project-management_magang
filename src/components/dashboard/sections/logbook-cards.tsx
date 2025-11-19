@@ -45,6 +45,8 @@ export function SectionLogbookCards() {
     loadStats()
     
     // Subscribe ke perubahan data realtime
+    if (!supabaseBrowser) return
+    
     const subscription = supabaseBrowser
       .channel('logbook_changes')
       .on('postgres_changes', 

@@ -115,7 +115,7 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
         nilai?: number
       }
       const mapped: MagangItem[] = (magangData as MagangRow[] | null || []).map((row) => {
-        const rawStatus = typeof row["Status"] === "string" ? row["Status"] : undefined
+        const rawStatus = typeof row["status"] === "string" ? row["status"] : undefined
         const normalizedStatus =
           rawStatus === "Aktif" || rawStatus === "Selesai" || rawStatus === "Pending"
             ? rawStatus
@@ -123,7 +123,7 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
 
         return {
           id: row["id"] || row["Siswa"] || "",
-          nama_siswa: row["nama_siswa"] ?? row["Siswa"] ?? "-"
+          nama_siswa: row["nama_siswa"] ?? row["Siswa"] ?? "-",
           kelas: row["kelas"] ?? row["Kelas"] ?? "",
           jurusan: row["jurusan"] ?? row["Jurusan"] ?? "",
           nama_dudi: row["nama_perusahaan"] ?? row["nama_dudi"] ?? row["DUDI"] ?? "",

@@ -49,34 +49,109 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = React.useState<User | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
 
-  // Initialize dari localStorage
+  // Initialize dari Supabase session
   React.useEffect(() => {
-    if (typeof window !== "undefined") {
-      const savedUser = localStorage.getItem("auth_user")
-      if (savedUser) {
-        try {
-          setUser(JSON.parse(savedUser))
-        } catch (error) {
-          console.error("Error parsing saved user:", error)
-          localStorage.removeItem("auth_user")
+    let mounted = true
+    
+    async function initAuth() {
+      try {
+        // Import Supabase client
+        const { supabaseBrowser } = await import("@/lib & database connection/supabase-browser")
+        if (!supabaseBrowser) {
+          setIsLoading(false)
+          return
         }
+        
+        // Get current session
+        const { data: { session } } = await supabaseBrowser.auth.getSession()
+        
+        if (session?.user && mounted) {
+          // Try to get avatar from users table first
+          let avatarUrl = session.user.user_metadata?.avatar_url
+          
+          try {
+            const { data: dbUser } = await supabaseBrowser
+              .from('users')
+              .select('avatar')
+              .eq('id', session.user.id)
+              .maybeSingle()
+            
+            if (dbUser?.avatar) {
+              avatarUrl = dbUser.avatar
+            }
+          } catch (error) {
+            console.log('Could not load avatar from database, using metadata:', error)
+          }
+          
+          const userData: User = {
+            id: session.user.id,
+            email: session.user.email || "",
+            fullName: session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split("@")[0] || "User",
+            username: session.user.user_metadata?.username || session.user.email?.split("@")[0] || "user",
+            avatar: avatarUrl,
+            provider: (session.user.app_metadata?.provider as "email" | "google" | "github") || "email"
+          }
+          setUser(userData)
+        }
+        
+        // Listen for auth changes
+        const { data: { subscription } } = supabaseBrowser.auth.onAuthStateChange(async (event, session) => {
+          console.log("Auth state change:", event)
+          
+          if (session?.user && mounted) {
+            // Try to get avatar from users table first
+            let avatarUrl = session.user.user_metadata?.avatar_url
+            
+            try {
+              const { data: dbUser } = await supabaseBrowser
+                .from('users')
+                .select('avatar')
+                .eq('id', session.user.id)
+                .maybeSingle()
+              
+              if (dbUser?.avatar) {
+                avatarUrl = dbUser.avatar
+              }
+            } catch (error) {
+              console.log('Could not load avatar from database, using metadata:', error)
+            }
+            
+            const userData: User = {
+              id: session.user.id,
+              email: session.user.email || "",
+              fullName: session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split("@")[0] || "User",
+              username: session.user.user_metadata?.username || session.user.email?.split("@")[0] || "user",
+              avatar: avatarUrl,
+              provider: (session.user.app_metadata?.provider as "email" | "google" | "github") || "email"
+            }
+            setUser(userData)
+          } else if (event === "SIGNED_OUT" && mounted) {
+            setUser(null)
+          }
+        })
+        
+        if (mounted) setIsLoading(false)
+        
+        // Cleanup
+        return () => {
+          subscription.unsubscribe()
+        }
+      } catch (error) {
+        console.error("Auth init error:", error)
+        if (mounted) setIsLoading(false)
       }
-      setIsLoading(false)
+    }
+    
+    initAuth()
+    
+    return () => {
+      mounted = false
     }
   }, [])
 
-  // Simpan user ke localStorage setiap kali berubah
-  React.useEffect(() => {
-    if (typeof window !== "undefined") {
-      if (user) {
-        localStorage.setItem("auth_user", JSON.stringify(user))
-      } else {
-        localStorage.removeItem("auth_user")
-      }
-    }
-  }, [user])
+  // No need for localStorage - Supabase handles session automatically
 
-  const login = async (email: string, _password: string, recaptchaToken?: string) => {
+  const login = async (email: string, password: string, recaptchaToken?: string) => {
     setIsLoading(true)
     try {
       // Validasi reCAPTCHA jika token disediakan
@@ -85,20 +160,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         // TODO: Verifikasi reCAPTCHA token dengan backend
       }
       
-      // TODO: Implementasi actual login dengan Supabase
-      // Untuk sekarang, simulasi login
-      const mockUser: User = {
-        id: "1",
+      // Import Supabase client
+      const { supabaseBrowser } = await import("@/lib & database connection/supabase-browser")
+      if (!supabaseBrowser) throw new Error("Supabase client not available")
+      
+      // Real Supabase login
+      const { data, error } = await supabaseBrowser.auth.signInWithPassword({
         email,
-        fullName: "Test User",
-        username: email.split("@")[0],
+        password,
+      })
+      
+      if (error) throw error
+      if (!data.user) throw new Error("No user data returned")
+      
+      // Set user dari Supabase
+      const userData: User = {
+        id: data.user.id,
+        email: data.user.email || email,
+        fullName: data.user.user_metadata?.full_name || data.user.user_metadata?.name || email.split("@")[0],
+        username: data.user.user_metadata?.username || email.split("@")[0],
+        avatar: data.user.user_metadata?.avatar_url,
         provider: "email"
       }
       
-      // Simulasi delay API
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      setUser(mockUser)
+      setUser(userData)
     } catch (error) {
       console.error("Login error:", error)
       throw error
@@ -110,20 +195,41 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const register = async (userData: RegisterData) => {
     setIsLoading(true)
     try {
-      // TODO: Implementasi actual register dengan Supabase
-      // Untuk sekarang, simulasi register
-      const mockUser: User = {
-        id: Date.now().toString(),
+      // Validasi reCAPTCHA jika token disediakan
+      if (userData.recaptchaToken) {
+        console.log("reCAPTCHA token received:", userData.recaptchaToken)
+        // TODO: Verifikasi reCAPTCHA token dengan backend
+      }
+      
+      // Import Supabase client
+      const { supabaseBrowser } = await import("@/lib & database connection/supabase-browser")
+      if (!supabaseBrowser) throw new Error("Supabase client not available")
+      
+      // Real Supabase register
+      const { data, error } = await supabaseBrowser.auth.signUp({
         email: userData.email,
+        password: userData.password,
+        options: {
+          data: {
+            full_name: userData.fullName,
+            username: userData.username,
+          }
+        }
+      })
+      
+      if (error) throw error
+      if (!data.user) throw new Error("No user data returned")
+      
+      // Set user dari Supabase
+      const newUser: User = {
+        id: data.user.id,
+        email: data.user.email || userData.email,
         fullName: userData.fullName,
         username: userData.username,
         provider: "email"
       }
       
-      // Simulasi delay API
-      await new Promise(resolve => setTimeout(resolve, 1000))
-      
-      setUser(mockUser)
+      setUser(newUser)
     } catch (error) {
       console.error("Register error:", error)
       throw error
@@ -211,9 +317,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }
 
-  const logout = () => {
-    setUser(null)
-    // Clear localStorage akan dilakukan otomatis oleh useEffect
+  const logout = async () => {
+    try {
+      const { supabaseBrowser } = await import("@/lib & database connection/supabase-browser")
+      if (supabaseBrowser) {
+        await supabaseBrowser.auth.signOut()
+      }
+      setUser(null)
+    } catch (error) {
+      console.error("Logout error:", error)
+      setUser(null) // Force logout anyway
+    }
   }
 
   const value: AuthContextValue = {

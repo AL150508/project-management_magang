@@ -31,63 +31,39 @@ export function StudentDashboard({ userName }: StudentDashboardProps) {
     const load = async () => {
       try {
         if (!supabaseBrowser) return
-        // 1) Coba pakai RPC untuk statistik global (bypass RLS via SECURITY DEFINER)
+        // Get logbook statistics with direct query
         let total = 0, approved = 0, rejected = 0, pending = 0
-        try {
-          const { data: statsRpc, error: statsErr } = await supabaseBrowser.rpc('logbook_get_stats')
-          if (!statsErr && Array.isArray(statsRpc) && statsRpc[0]) {
-            total = Number(statsRpc[0].total || 0)
-            approved = Number(statsRpc[0].disetujui || 0)
-            rejected = Number(statsRpc[0].ditolak || 0)
-            pending = Number(statsRpc[0].belum_diverifikasi || 0)
-          } else {
-            // Fallback ke query biasa jika RPC belum tersedia/terbatas RLS
-            const { data: allRows } = await supabaseBrowser
-              .from('logbook')
-              .select('status')
-            type LogbookRow = { status?: string }
-            const rows: LogbookRow[] = (allRows as LogbookRow[] | null) || []
-            total = rows.length
-            approved = rows.filter((r: LogbookRow) => (r.status || '') === 'Disetujui').length
-            rejected = rows.filter((r: LogbookRow) => (r.status || '') === 'Ditolak').length
-            pending = rows.filter((r: LogbookRow) => (r.status || '') === 'Belum Diverifikasi').length
-          }
-        } catch {}
+        
+        const { data: allRows } = await supabaseBrowser
+          .from('logbook')
+          .select('status')
+        type LogbookRow = { status?: string }
+        const rows: LogbookRow[] = (allRows as LogbookRow[] | null) || []
+        total = rows.length
+        approved = rows.filter((r: LogbookRow) => (r.status || '') === 'Disetujui').length
+        rejected = rows.filter((r: LogbookRow) => (r.status || '') === 'Ditolak').length
+        pending = rows.filter((r: LogbookRow) => (r.status || '') === 'Belum Diverifikasi').length
 
-        // 2) Coba pakai RPC untuk 3 aktivitas terbaru
+        // Get recent activities with direct query
         type LatestRow = { id?: number | string; kegiatan?: string; tanggal?: string; status?: string }
         let recent: Array<{id:number|string; type:string; title:string; time:string; status:"approved"|"progress"|"rejected"|"pending"}> = []
         let nextDeadline = ''
-        try {
-          const { data: latestRpc } = await supabaseBrowser.rpc('logbook_get_latest', { p_limit: 3 })
-          const latestRows: LatestRow[] = (latestRpc as LatestRow[] | null) || []
-          recent = latestRows.map((r: LatestRow, idx: number) => ({
-            id: (r.id ?? idx) as number | string,
-            type: 'logbook',
-            title: r.kegiatan || 'Aktivitas logbook',
-            time: r.tanggal ? new Date(r.tanggal).toLocaleDateString('id-ID') : '',
-            status: (r.status === 'Disetujui') ? 'approved' : (r.status === 'Ditolak') ? 'rejected' : 'progress'
-          }))
-          const sortedDates = latestRows.map((r: LatestRow) => r.tanggal).filter(Boolean).sort() as string[]
-          nextDeadline = sortedDates.slice(-1)[0] || ''
-        } catch {
-          // Fallback ke query biasa (mungkin 0 jika RLS membatasi siswa)
-          const { data: fallbackRows } = await supabaseBrowser
-            .from('logbook')
-            .select('id,kegiatan,status,tanggal')
+        
+        const { data: fallbackRows } = await supabaseBrowser
+          .from('logbook')
+          .select('id,kegiatan,status,tanggal')
             .order('created_at', { ascending: false })
             .limit(3)
-          const rows: LatestRow[] = (fallbackRows as LatestRow[] | null) || []
-          recent = rows.map((r: LatestRow, idx: number) => ({
-            id: (r.id ?? idx) as number | string,
-            type: 'logbook',
-            title: r.kegiatan || 'Aktivitas logbook',
-            time: r.tanggal ? new Date(r.tanggal).toLocaleDateString('id-ID') : '',
-            status: (r.status === 'Disetujui') ? 'approved' : (r.status === 'Ditolak') ? 'rejected' : 'progress'
-          }))
-          const sortedDates = rows.map((r: LatestRow) => r.tanggal).filter(Boolean).sort() as string[]
-          nextDeadline = sortedDates.slice(-1)[0] || ''
-        }
+        const recentRows: LatestRow[] = (fallbackRows as LatestRow[] | null) || []
+        recent = recentRows.map((r: LatestRow, idx: number) => ({
+          id: (r.id ?? idx) as number | string,
+          type: 'logbook',
+          title: r.kegiatan || 'Aktivitas logbook',
+          time: r.tanggal ? new Date(r.tanggal).toLocaleDateString('id-ID') : '',
+          status: (r.status === 'Disetujui') ? 'approved' : (r.status === 'Ditolak') ? 'rejected' : 'progress'
+        }))
+        const sortedDates = recentRows.map((r: LatestRow) => r.tanggal).filter(Boolean).sort() as string[]
+        nextDeadline = sortedDates.slice(-1)[0] || ''
 
         const progress = total > 0 ? Math.min(100, Math.round((approved / total) * 100)) : 0
 

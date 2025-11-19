@@ -16,6 +16,7 @@ import { Textarea } from "@/components/ui/textarea"
 import { IconBuilding } from "@tabler/icons-react"
 import { showSuccess, showError } from "@/lib & database connection/utils"
 import { supabaseBrowser } from "@/lib & database connection/supabase-browser"
+import { sendPushToRole } from "@/lib & database connection/send-push"
 import { DudiItem } from "./dudi-cards"
 
 interface DudiRegistrationModalProps {
@@ -114,7 +115,7 @@ export function DudiRegistrationModal({
       console.log("👤 User data:", user)
       
       // Gunakan nama siswa sebagai identifier, bukan UUID
-      let studentName = formData.nama?.trim() || user?.fullName || "Siswa"
+      let studentName = formData.nama?.trim() || "Siswa"
       if (!studentName || studentName === "null" || studentName === "undefined") {
         console.log("⚠️ Nama siswa kosong, menggunakan fallback")
         studentName = "Siswa_" + Date.now()
@@ -145,8 +146,10 @@ export function DudiRegistrationModal({
         return
       }
 
-      // Payload utama: kolom kapital sesuai pembacaan tabel Magang
-      const payloadCaps = {
+      // Payload dengan BOTH capital dan lowercase untuk compatibility
+      // Database table 'magang' punya mix column names
+      const payload = {
+        // Capital columns (legacy)
         Siswa: studentName,
         NIS: nisSiswa || null,
         Kelas: kelasSiswa || null,
@@ -154,11 +157,8 @@ export function DudiRegistrationModal({
         DUDI: namaPerusahaan,
         Mulai: formData.periode_mulai || null,
         Selesai: formData.periode_selesai || null,
-        Status: "Pending"
-      }
-
-      // Fallback snake_case jika gagal karena kolom tidak cocok
-      const payloadSnake = {
+        
+        // Lowercase columns (current standard)
         nama_siswa: studentName,
         nis: nisSiswa || null,
         kelas: kelasSiswa || null,
@@ -166,37 +166,44 @@ export function DudiRegistrationModal({
         nama_dudi: namaPerusahaan,
         periode_mulai: formData.periode_mulai || null,
         periode_selesai: formData.periode_selesai || null,
-        status: "Pending"
+        status: "Pending",
+        
+        // Nullable fields
+        nilai: null
       }
 
-      // Coba insert payloadCaps terlebih dahulu
-      const firstTry = await supabaseBrowser
+      // Insert dengan payload yang sudah lengkap
+      console.log("📤 Sending payload:", payload)
+      
+      const { error: insertError } = await supabaseBrowser
         .from("magang")
-        .insert([payloadCaps])
+        .insert([payload])
 
-      if (firstTry.error) {
-        console.log("❌ Insert payloadCaps gagal:", firstTry.error)
-        // Coba fallback ke snake_case
-        const secondTry = await supabaseBrowser
-          .from("magang")
-          .insert([payloadSnake])
-        if (secondTry.error) {
-          console.log("❌ Insert payloadSnake juga gagal:", secondTry.error)
-          const errorObj = secondTry.error as { code?: string; message?: string }
-          if (errorObj?.code === '23505') {
-            showError("Data sudah terdaftar untuk pendaftaran ini")
-          } else if (errorObj?.code === '23502') {
-            showError("Data tidak lengkap. Mohon periksa kembali form")
-          } else if (errorObj?.code === 'PGRST116' || errorObj?.code === 'PGRST205') {
-            showError("Tabel magang belum dibuat. Silakan jalankan SQL setup terlebih dahulu.")
-          } else {
-            showError("Gagal menyimpan pendaftaran", errorObj?.message || 'Unknown error')
-          }
-          return
+      if (insertError) {
+        console.error("❌ Insert gagal:", insertError)
+        const errorObj = insertError as { code?: string; message?: string }
+        
+        if (errorObj?.code === '23505') {
+          showError("Data sudah terdaftar untuk pendaftaran ini")
+        } else if (errorObj?.code === '23502') {
+          console.error("NOT NULL violation - Missing required field:", errorObj?.message)
+          showError("Data tidak lengkap. Field yang wajib: " + (errorObj?.message || "tidak diketahui"))
+        } else if (errorObj?.code === 'PGRST116' || errorObj?.code === 'PGRST205') {
+          showError("Tabel magang belum dibuat. Silakan jalankan SQL setup terlebih dahulu.")
+        } else {
+          showError("Gagal menyimpan pendaftaran: " + (errorObj?.message || 'Unknown error'))
         }
+        return
       }
       
       showSuccess(`Pendaftaran berhasil! Menunggu persetujuan guru untuk ${dudi.nama_perusahaan}`)
+      
+      // Send push notification to all guru
+      sendPushToRole('guru', {
+        title: '🏢 Pendaftaran DUDI Baru',
+        body: `${dudi.nama_perusahaan} telah mendaftar sebagai DUDI`,
+        url: '/dudi'
+      }).catch(err => console.error('Push notification error:', err))
       
       // Close modal and call success callback
       onOpenChange(false)
@@ -258,7 +265,7 @@ export function DudiRegistrationModal({
               </div>
             </div>
             <div className="mt-3 text-sm text-gray-600">
-              <p>Kuota tersisa: {dudi.kuota_magang - dudi.kuota_terisi} slot</p>
+              <p>Kuota tersisa: {(dudi.kuota_magang || 0) - (dudi.kuota_terisi || 0)} slot</p>
             </div>
           </div>
 

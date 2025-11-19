@@ -1,11 +1,13 @@
 "use client"
 
 import * as React from "react"
+import { useRouter } from "next/navigation"
 import { useAuth } from "@/context/auth-context"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
 import { LogOut, Settings, User, ChevronDown } from "lucide-react"
+import { NotificationToggle } from "@/components/notification-toggle"
 import { showConfirmation, showSuccess } from "@/lib & database connection/utils"
 
 interface UserProfileHeaderProps {
@@ -14,20 +16,40 @@ interface UserProfileHeaderProps {
 
 export function UserProfileHeader({ role }: UserProfileHeaderProps) {
   const { user, logout } = useAuth()
+  const router = useRouter()
 
   if (!user) return null
 
-  // Tentukan display name berdasarkan role
-  const displayName = role === "guru" ? "Guru Admin" : (user.fullName || user.username || "User")
-  const displaySubtext = role === "guru" ? user.fullName || user.username || "Administrator" : `@${user.username || "user"}`
+  // Generate initials from user name
+  const getInitials = () => {
+    if (!user) return "?"
+    const name = user.fullName || user.username || "User"
+    return name.charAt(0).toUpperCase()
+  }
 
-  // Generate initials untuk avatar
-  const initials = displayName
-    .split(" ")
-    .map(n => n[0])
-    .join("")
-    .toUpperCase()
-    .slice(0, 2)
+  // Display name berdasarkan role
+  const displayName = React.useMemo(() => {
+    if (role === "guru") {
+      return "Guru Admin"
+    }
+    return user?.fullName || user?.username || "Siswa"
+  }, [role, user])
+
+  // Display subtext berdasarkan role
+  const displaySubtext = React.useMemo(() => {
+    if (role === "guru") {
+      return user?.fullName || user?.username || "Administrator"
+    }
+    return `@${user?.username || "user"}`
+  }, [role, user])
+
+  const handleNavigateToProfile = () => {
+    router.push("/profile")
+  }
+
+  const handleNavigateToSettings = () => {
+    router.push("/profile") // Same as profile for now
+  }
 
   const handleLogout = () => {
     showConfirmation({
@@ -42,71 +64,81 @@ export function UserProfileHeader({ role }: UserProfileHeaderProps) {
     })
   }
 
+  // Add cache busting to avatar URL
+  const avatarUrl = user?.avatar ? `${user.avatar}?t=${Date.now()}` : undefined
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          className="flex items-center gap-3 h-auto p-2 hover:bg-slate-50 transition-colors"
+          className="flex items-center gap-3 h-auto py-2 px-3 hover:bg-slate-100 rounded-lg transition-colors"
         >
-          <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10">
-              <AvatarImage src={user.avatar} alt={displayName} />
-              <AvatarFallback className="bg-blue-600 text-white font-medium">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            <div className="hidden md:flex flex-col items-start">
-              <span className="text-sm font-medium text-slate-900">
-                {displayName}
-              </span>
-              <span className="text-xs text-slate-500">
-                {displaySubtext}
-              </span>
-            </div>
-            <ChevronDown className="h-4 w-4 text-slate-400 hidden md:block" />
-          </div>
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={avatarUrl} alt={user?.fullName || "User"} key={user?.avatar} />
+            <AvatarFallback className="bg-blue-600 text-white text-sm font-semibold">
+              {getInitials()}
+            </AvatarFallback>
+          </Avatar>
+          <ChevronDown className="h-4 w-4 text-gray-500" />
         </Button>
       </DropdownMenuTrigger>
       
-      <DropdownMenuContent align="end" className="w-56">
-        <div className="flex items-center gap-3 p-3">
-          <Avatar className="h-10 w-10">
-            <AvatarImage src={user.avatar} alt={displayName} />
-            <AvatarFallback className="bg-blue-600 text-white font-medium">
-              {initials}
+      <DropdownMenuContent align="end" className="w-64 p-2">
+        {/* User Info Header */}
+        <div className="flex items-center gap-3 px-2 py-3 mb-1">
+          <Avatar className="h-12 w-12">
+            <AvatarImage src={avatarUrl} alt={user?.fullName || "User"} key={user?.avatar} />
+            <AvatarFallback className="bg-blue-600 text-white font-semibold">
+              {getInitials()}
             </AvatarFallback>
           </Avatar>
-          <div className="flex flex-col">
-            <span className="text-sm font-medium text-slate-900">
+          <div className="flex flex-col flex-1 min-w-0">
+            <span className="text-base font-semibold text-slate-900 truncate">
               {displayName}
             </span>
-            <span className="text-xs text-slate-500">
+            <span className="text-sm text-slate-500 truncate">
               {displaySubtext}
             </span>
           </div>
         </div>
         
-        <DropdownMenuSeparator />
+        <DropdownMenuSeparator className="my-2" />
         
-        <DropdownMenuItem className="cursor-pointer">
-          <User className="h-4 w-4 mr-2" />
-          Profile
-        </DropdownMenuItem>
-        
-        <DropdownMenuItem className="cursor-pointer">
-          <Settings className="h-4 w-4 mr-2" />
-          Pengaturan
-        </DropdownMenuItem>
-        
-        <DropdownMenuSeparator />
-        
+        {/* Profile Menu Item */}
         <DropdownMenuItem 
-          className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
-          onClick={handleLogout}
+          className="cursor-pointer px-3 py-2 rounded-md transition-colors hover:bg-slate-100 focus:bg-slate-100"
+          onSelect={handleNavigateToProfile}
         >
-          <LogOut className="h-4 w-4 mr-2" />
-          Keluar
+          <User className="h-5 w-5 mr-3 text-slate-600" />
+          <span className="text-sm font-medium text-slate-900">Profile</span>
+        </DropdownMenuItem>
+        
+        {/* Pengaturan Menu Item */}
+        <DropdownMenuItem 
+          className="cursor-pointer px-3 py-2 rounded-md transition-colors hover:bg-slate-100 focus:bg-slate-100"
+          onSelect={handleNavigateToSettings}
+        >
+          <Settings className="h-5 w-5 mr-3 text-slate-600" />
+          <span className="text-sm font-medium text-slate-900">Pengaturan</span>
+        </DropdownMenuItem>
+        
+        <DropdownMenuSeparator className="my-2" />
+        
+        {/* Notification Toggle */}
+        <div className="px-1 py-1">
+          <NotificationToggle />
+        </div>
+        
+        <DropdownMenuSeparator className="my-2" />
+        
+        {/* Keluar Menu Item */}
+        <DropdownMenuItem 
+          className="cursor-pointer px-3 py-2 rounded-md transition-colors hover:bg-red-50 focus:bg-red-50"
+          onSelect={handleLogout}
+        >
+          <LogOut className="h-5 w-5 mr-3 text-red-600" />
+          <span className="text-sm font-medium text-red-600">Keluar</span>
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>

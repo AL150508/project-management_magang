@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Check VAPID Configuration</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .card {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #2563eb;
+      margin-top: 0;
+    }
+    .status {
+      padding: 12px;
+      margin: 10px 0;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    .success {
+      background: #dcfce7;
+      color: #166534;
+      border: 1px solid #86efac;
+    }
+    .error {
+      background: #fee2e2;
+      color: #991b1b;
+      border: 1px solid #fca5a5;
+    }
+    .warning {
+      background: #fef3c7;
+      color: #92400e;
+      border: 1px solid #fde047;
+    }
+    code {
+      background: #f1f5f9;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 13px;
+    }
+    .code-block {
+      background: #1e293b;
+      color: #e2e8f0;
+      padding: 15px;
+      border-radius: 8px;
+      overflow-x: auto;
+      margin: 10px 0;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h1>🔑 Check VAPID Configuration</h1>
+    <p>Gunakan halaman ini untuk verify VAPID keys configuration.</p>
+    
+    <div id="status"></div>
+    
+    <button onclick="checkVAPID()">Check VAPID Keys</button>
+    <button onclick="generateNewKeys()">Generate New VAPID Keys</button>
+    
+    <h3>Instructions:</h3>
+    <ol>
+      <li>Click "Check VAPID Keys" to verify current configuration</li>
+      <li>If keys are missing or invalid, click "Generate New VAPID Keys"</li>
+      <li>Copy the generated keys to your <code>.env.local</code> file</li>
+      <li>Restart your Next.js server</li>
+    </ol>
+  </div>
+
+  <script>
+    function showStatus(message, type = 'info') {
+      const statusDiv = document.getElementById('status');
+      statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+    }
+
+    async function checkVAPID() {
+      showStatus('🔍 Checking VAPID configuration...', 'warning');
+      
+      // This will be populated from Next.js environment
+      const vapidPublicKey = typeof process !== 'undefined' && process.env?.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+      
+      let message = '<h3>VAPID Check Results:</h3>';
+      
+      if (!vapidPublicKey) {
+        message += '<p>❌ <strong>VAPID Public Key NOT FOUND</strong></p>';
+        message += '<p>Your environment variable <code>NEXT_PUBLIC_VAPID_PUBLIC_KEY</code> is not set.</p>';
+        message += '<p>Please generate new keys using the button below.</p>';
+        showStatus(message, 'error');
+      } else {
+        message += '<p>✅ <strong>VAPID Public Key FOUND</strong></p>';
+        message += `<p>Key length: <code>${vapidPublicKey.length}</code> characters</p>';
+        message += `<p>First 20 chars: <code>${vapidPublicKey.substring(0, 20)}...</code></p>';
+        
+        if (vapidPublicKey.length !== 87 && vapidPublicKey.length !== 88) {
+          message += '<p>⚠️ <strong>WARNING:</strong> VAPID key length looks incorrect. Standard length is 87-88 characters.</p>';
+          showStatus(message, 'warning');
+        } else {
+          message += '<p>✅ Key length looks correct!</p>';
+          showStatus(message, 'success');
+        }
+      }
+    }
+
+    function generateNewKeys() {
+      showStatus('Generating new VAPID keys...', 'warning');
+      
+      let message = '<h3>Generate VAPID Keys</h3>';
+      message += '<p>Run this command in your project root to generate new VAPID keys:</p>';
+      message += '<div class="code-block">npx web-push generate-vapid-keys</div>';
+      message += '<p>Then add the output to your <code>.env.local</code> file:</p>';
+      message += '<div class="code-block">';
+      message += '# Web Push VAPID Keys<br>';
+      message += 'VAPID_EMAIL=mailto:your-email@example.com<br>';
+      message += 'NEXT_PUBLIC_VAPID_PUBLIC_KEY=YOUR_PUBLIC_KEY_HERE<br>';
+      message += 'VAPID_PRIVATE_KEY=YOUR_PRIVATE_KEY_HERE';
+      message += '</div>';
+      message += '<p><strong>Important:</strong> Restart your Next.js server after updating .env.local</p>';
+      message += '<p>Then run <code>npm start</code> again.</p>';
+      
+      showStatus(message, 'warning');
+    }
+
+    // Auto-check on load
+    window.addEventListener('load', checkVAPID);
+  </script>
+</body>
+</html>

@@ -245,7 +245,7 @@ export function AddressAutocomplete({
         <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-lg shadow-lg p-4">
           <div className="flex items-center gap-3 text-gray-500">
             <IconMapPin className="h-4 w-4" />
-            <p className="text-sm">Tidak ada hasil ditemukan untuk "{value}"</p>
+            <p className="text-sm">Tidak ada hasil ditemukan untuk &quot;{value}&quot;</p>
           </div>
         </div>
       )}

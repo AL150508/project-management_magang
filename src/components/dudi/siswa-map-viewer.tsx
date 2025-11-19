@@ -99,7 +99,7 @@ function ClusterMarker({ position, siswaGroup, onMarkerClick }: ClusterMarkerPro
               {siswaGroup.map(s => (
                 <li key={toId(s.id)} className="flex items-center justify-between gap-2">
                   <span className="text-xs text-gray-800">
-                    {s.Siswa || s.nama_siswa} <span className="text-gray-500">• {s.kelas || s.Kelas} {s.jurusan || s.Jurusan}</span>
+                    {s.id} <span className="text-gray-500">• {s.dudi_id} {s.periode_mulai} {s.periode_selesai} {s.status}</span>
                   </span>
                   <button
                     onClick={() => onMarkerClick(toId(s.id))}
@@ -262,7 +262,7 @@ export function SiswaMapViewer({ className, onMarkerClick }: SiswaMapViewerProps
       // Fix leaflet default icons
       const L = await import('leaflet')
       
-      delete (L.Icon.Default.prototype as Record<string, unknown>)._getIconUrl
+      delete (L.Icon.Default.prototype as unknown as Record<string, unknown>)._getIconUrl
       L.Icon.Default.mergeOptions({
         iconUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon.png',
         iconRetinaUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-icon-2x.png',
