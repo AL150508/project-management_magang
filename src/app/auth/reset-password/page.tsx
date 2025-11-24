@@ -1,9 +1,7 @@
 "use client"
 
-export const dynamic = "force-dynamic"
-
 import * as React from "react"
-import { useRouter, useSearchParams } from "next/navigation"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -11,10 +9,8 @@ import { Eye, EyeOff, Loader2, CheckCircle2 } from "lucide-react"
 import { showSuccess, showError } from "@/lib & database connection/utils"
 import { supabaseBrowser } from "@/lib & database connection/supabase-browser"
 
-function ResetPasswordPageContent() {
+export default function ResetPasswordPage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
-  const [isInitializing, setIsInitializing] = React.useState(true)
   const [isLoading, setIsLoading] = React.useState(false)
   const [showPassword, setShowPassword] = React.useState(false)
   const [showConfirmPassword, setShowConfirmPassword] = React.useState(false)
@@ -32,48 +28,6 @@ function ResetPasswordPageContent() {
     }))
   }
 
-  // When arriving from Supabase email link, there may be an error or a one-time code
-  // We need to exchange that code for a session before we can call auth.updateUser.
-  React.useEffect(() => {
-    const error = searchParams.get("error")
-    const errorDescription = searchParams.get("error_description")
-    const code = searchParams.get("code")
-
-    const init = async () => {
-      try {
-        if (error) {
-          const msg = decodeURIComponent(errorDescription || error)
-          showError(`Link reset tidak valid atau sudah kedaluwarsa: ${msg}`)
-          return
-        }
-
-        if (!code) {
-          // No code in URL; user might have opened this page directly.
-          return
-        }
-
-        if (!supabaseBrowser) {
-          throw new Error("Supabase client not initialized")
-        }
-
-        const { error: exchangeError } = await supabaseBrowser.auth.exchangeCodeForSession(code)
-        if (exchangeError) {
-          showError(`Tidak bisa memvalidasi link reset: ${exchangeError.message}`)
-        }
-      } catch (err) {
-        console.error("❌ Error initializing reset password session:", err)
-        const msg = err instanceof Error ? err.message : "Terjadi kesalahan saat memvalidasi link"
-        showError(msg)
-      } finally {
-        setIsInitializing(false)
-      }
-    }
-
-    // Run once on mount
-    init()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     
@@ -88,9 +42,6 @@ function ResetPasswordPageContent() {
       return
     }
 
-    // Don't allow submit while we're still trying to initialize session
-    if (isInitializing) return
-
     setIsLoading(true)
     try {
       console.log("🔐 Updating password...")
@@ -99,9 +50,9 @@ function ResetPasswordPageContent() {
         throw new Error("Supabase client not initialized")
       }
 
-      // Update password for the user associated with the session created from the reset link
+      // Update password
       const { error } = await supabaseBrowser.auth.updateUser({
-        password: formData.password,
+        password: formData.password
       })
 
       if (error) {
@@ -249,13 +200,5 @@ function ResetPasswordPageContent() {
         </div>
       </div>
     </div>
-  )
-}
-
-export default function ResetPasswordPage() {
-  return (
-    <React.Suspense fallback={<div className="min-h-screen flex items-center justify-center p-8">Loading...</div>}>
-      <ResetPasswordPageContent />
-    </React.Suspense>
   )
 }

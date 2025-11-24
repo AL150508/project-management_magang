@@ -29,6 +29,7 @@ export function ProfileEdit({ onSave }: ProfileEditProps) {
   })
   
   const [isChangingPassword, setIsChangingPassword] = React.useState(false)
+  const [passwordError, setPasswordError] = React.useState<string | null>(null)
   const [avatarPreview, setAvatarPreview] = React.useState<string | null>(user?.avatar || null)
   const [isUploading, setIsUploading] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
@@ -55,53 +56,67 @@ export function ProfileEdit({ onSave }: ProfileEditProps) {
   }
   
   const handleChangePassword = async () => {
+    console.log("1️⃣ Starting password change")
+
     if (!passwordData.newPassword || passwordData.newPassword.length < 6) {
-      toast.error('Password baru minimal 6 karakter')
+      const msg = 'Password baru minimal 6 karakter'
+      setPasswordError(msg)
+      toast.error(msg)
       return
     }
     
     if (passwordData.newPassword !== passwordData.confirmPassword) {
-      toast.error('Konfirmasi password tidak cocok')
+      const msg = 'Konfirmasi password tidak cocok'
+      setPasswordError(msg)
+      toast.error(msg)
       return
     }
     
     if (!user?.email) {
-      toast.error('Email tidak ditemukan. Silakan login kembali.')
+      const msg = 'Email tidak ditemukan. Silakan login kembali.'
+      setPasswordError(msg)
+      toast.error(msg)
       return
     }
     
     try {
+      console.log("2️⃣ Validation passed")
       setIsChangingPassword(true)
+      setPasswordError(null)
       
       if (!supabaseBrowser) {
         throw new Error('Supabase client not initialized')
       }
       
       // Update password directly (user is already authenticated)
-      console.log('🔐 Updating password...')
+      console.log('3️⃣ Calling Supabase API - 🔐 Updating password...')
       
       const { error: updateError } = await supabaseBrowser.auth.updateUser({
         password: passwordData.newPassword
       })
+      console.log('4️⃣ API response:', { updateError })
       
       if (updateError) {
         console.error('❌ Update error:', updateError)
         throw updateError
       }
       
-      console.log('✅ Password updated successfully in Supabase Auth')
+      console.log('5️⃣ Success, showing toast - ✅ Password updated successfully in Supabase Auth')
       toast.success('Password berhasil diubah! Gunakan password baru ini untuk login berikutnya.')
       
       // Reset password fields
+      console.log('6️⃣ Resetting form fields')
       setPasswordData({
         newPassword: "",
         confirmPassword: ""
       })
     } catch (error) {
       console.error('❌ Password change error:', error)
-      const errorMessage = error instanceof Error ? error.message : 'Gagal mengubah password'
-      toast.error(errorMessage)
+      const errorMessage = error instanceof Error ? error.message : 'Gagal mengubah password. Silakan coba lagi.'
+      setPasswordError(errorMessage)
+      toast.error('Gagal mengubah password')
     } finally {
+      console.log('7️⃣ Finally block executed - 🔄 Resetting loading state')
       setIsChangingPassword(false)
     }
   }
@@ -331,6 +346,12 @@ export function ProfileEdit({ onSave }: ProfileEditProps) {
             <strong>ℹ️ Info:</strong> Karena Anda sudah login, langsung masukkan password baru yang diinginkan. Password lama akan otomatis terganti.
           </p>
         </div>
+
+        {passwordError && (
+          <div className="text-sm text-red-600 bg-red-50 border border-red-200 p-3 rounded-md">
+            {passwordError}
+          </div>
+        )}
 
         {/* Password Baru */}
         <div className="space-y-2">
