@@ -51,11 +51,27 @@ export function DudiTable({ onEdit, onDelete, onAdd }: DudiTableProps) {
   const [searchTerm, setSearchTerm] = React.useState("")
   const [pageSize, setPageSize] = React.useState(5)
   const [currentPage, setCurrentPage] = React.useState(1)
+  const loadingTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
 
   const loadData = React.useCallback(async () => {
+    // Clear previous timeout
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current)
+    }
+
     setLoading(true)
+    setError(null)
+    
+    // Set timeout protection - max 15 seconds
+    loadingTimeoutRef.current = setTimeout(() => {
+      console.error("⏱️ Loading timeout - forcing error state")
+      setLoading(false)
+      setError("Waktu tunggu habis. Silakan coba lagi atau periksa koneksi internet.")
+      toast.error("Gagal memuat data: timeout")
+    }, 15000)
+
     try {
-      console.log("Loading DUDI data...")
+      console.log("🔄 Loading DUDI data...")
       
       // Check if Supabase is properly configured
       if (!supabaseBrowser) {
@@ -68,19 +84,28 @@ export function DudiTable({ onEdit, onDelete, onAdd }: DudiTableProps) {
         .order("created_at", { ascending: false })
 
       if (error) {
-        console.error("Supabase error:", error)
+        console.error("❌ Supabase error:", error)
         throw new Error(`Database error: ${error.message}`)
       }
 
-      console.log("DUDI data loaded successfully:", dudiData)
+      console.log("✅ DUDI data loaded successfully:", dudiData?.length || 0, "items")
+      
+      // Clear timeout on success
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current)
+      }
       
       // Set data from database (empty array if no data)
       setData(dudiData || [])
-      
       setError(null) // Clear any previous errors
       
     } catch (error) {
-      console.error("Error loading DUDI data:", error)
+      console.error("❌ Error loading DUDI data:", error)
+      
+      // Clear timeout on error
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current)
+      }
       
       // Better error message for user
       let errorMessage = "Gagal memuat data DUDI"
@@ -89,6 +114,8 @@ export function DudiTable({ onEdit, onDelete, onAdd }: DudiTableProps) {
           errorMessage = "Gagal terhubung ke database"
         } else if (error.message.includes("Supabase client")) {
           errorMessage = "Konfigurasi database tidak lengkap"
+        } else if (error.message.includes("timeout")) {
+          errorMessage = "Koneksi timeout. Silakan coba lagi."
         }
       }
       
@@ -102,6 +129,39 @@ export function DudiTable({ onEdit, onDelete, onAdd }: DudiTableProps) {
   React.useEffect(() => {
     loadData()
   }, [loadData])
+
+  // Realtime: otomatis reload ketika ada perubahan di tabel `dudi`
+  React.useEffect(() => {
+    if (!supabaseBrowser) return
+
+    console.log("🔴 Setting up realtime subscription for DUDI table")
+
+    const channel = supabaseBrowser
+      .channel(`realtime-dudi-${Date.now()}`) // Unique channel name
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "dudi" },
+        (payload) => {
+          console.log("🔔 DUDI data changed:", payload.eventType)
+          loadData()
+        }
+      )
+      .subscribe((status) => {
+        console.log("📡 Realtime subscription status:", status)
+      })
+
+    return () => {
+      console.log("🔴 Cleaning up realtime subscription for DUDI")
+      if (supabaseBrowser) {
+        supabaseBrowser.removeChannel(channel)
+      }
+      // Clear timeout on cleanup
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Empty dependency - only setup once
 
   const filteredData = React.useMemo(() => {
     if (!searchTerm) return data

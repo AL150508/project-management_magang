@@ -28,7 +28,7 @@ type LatestLogbookItem = {
   status?: "Disetujui" | "Ditolak" | "Belum Diverifikasi"
 }
 
-export function SectionLatestLogbook({ items, compact = false, minHeightClass }: { items?: LatestLogbookItem[]; compact?: boolean; minHeightClass?: string }) {
+export function SectionLatestLogbook({ items }: { items?: LatestLogbookItem[] }) {
   const [logbookData, setLogbookData] = React.useState<LatestLogbookItem[]>([])
   const [loading, setLoading] = React.useState(true)
   const [currentPage, setCurrentPage] = React.useState(1)

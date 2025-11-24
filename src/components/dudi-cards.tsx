@@ -69,26 +69,22 @@ export function DudiCards() {
       console.log("DUDI data loaded successfully:", dudiData)
       
       // Ambil data siswa magang untuk menghitung kuota terisi
+      // Gunakan logika yang konsisten dengan DudiMapViewer: hanya status 'Aktif'
       const { data: magangData } = await supabaseBrowser
         .from("magang")
-        .select("DUDI,nama_dudi,nama_perusahaan,Status,status")
+        .select("nama_dudi, status")
+        .eq("status", "Aktif")
       
       type MagangRow = {
-        DUDI?: string
         nama_dudi?: string
-        nama_perusahaan?: string
-        Status?: string
         status?: string
       }
 
-      // Normalisasi dan hitung kuota terisi per DUDI (kecuali yang 'Ditolak')
+      // Hitung kuota terisi per DUDI, dikelompokkan berdasarkan nama Dudi (case-insensitive)
       const kuotaTerisiMap = (magangData as MagangRow[] | null || []).reduce((acc: Record<string, number>, row: MagangRow) => {
-        const rawStatus = (row.Status ?? row.status ?? "").toString()
-        if (rawStatus === "Ditolak") return acc
-        const rawName = (row.DUDI ?? row.nama_dudi ?? row.nama_perusahaan ?? "").toString()
-        const key = rawName.trim().toLowerCase()
-        if (!key) return acc
-        acc[key] = (acc[key] || 0) + 1
+        const rawName = (row.nama_dudi ?? "").toString().trim().toLowerCase()
+        if (!rawName) return acc
+        acc[rawName] = (acc[rawName] || 0) + 1
         return acc
       }, {})
       

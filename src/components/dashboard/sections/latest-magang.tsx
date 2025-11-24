@@ -17,11 +17,10 @@
  */
 "use client"
 
-import { IconSchool, IconChevronLeft, IconChevronRight, IconClock } from "@tabler/icons-react"
+import { IconSchool, IconChevronLeft, IconChevronRight } from "@tabler/icons-react"
 import { Calendar as IconCalendar } from "lucide-react"
 import * as React from "react"
 import { supabaseBrowser } from "@/lib & database connection/supabase-browser"
-import { Badge } from "@/components/ui/badge"
 
 // Helper function untuk format tanggal
 function formatDate(date: string) {
@@ -41,7 +40,7 @@ type LatestMagangItem = {
   status?: "Aktif" | "Selesai" | "Tertunda"
 }
 
-export function SectionLatestMagang({ items, compact = false, minHeightClass }: { items?: LatestMagangItem[]; compact?: boolean; minHeightClass?: string }) {
+export function SectionLatestMagang({ items }: { items?: LatestMagangItem[] }) {
   const [magangData, setMagangData] = React.useState<LatestMagangItem[]>([])
   const [loading, setLoading] = React.useState(true)
   const [currentPage, setCurrentPage] = React.useState(1)
@@ -60,8 +59,8 @@ export function SectionLatestMagang({ items, compact = false, minHeightClass }: 
         }
 
         if (!supabaseBrowser) {
-          // DASHBOARD_MAGANG_FALLBACK: jika client DB belum siap, tampilkan dummy
-          setMagangData(latestMagangDummy)
+          // Database client not ready, show empty state
+          setMagangData([])
           return
         }
 
@@ -94,11 +93,11 @@ export function SectionLatestMagang({ items, compact = false, minHeightClass }: 
 
         // DASHBOARD_MAGANG_MAPPING: Mapping data dari tabel magang dengan kolom yang benar
         const mapped: LatestMagangItem[] = (rows || []).map((r, idx) => {
-          const studentName = (r["Siswa"] as string) || (r["id"] ? `Magang #${r["id"]}` : `Siswa ${idx + 1}`)
-          const companyName = (r["nama_perusahaan"] as string) || (r["DUDI"] as string) || "-"
-          const startDate = (r["periode_mulai"] as string) || (r["Mulai"] as string) || "-"
-          const endDate = (r["periode_selesai"] as string) || (r["Selesai"] as string) || "-"
-          const rawStatus = (r["status"] as string) || "Pending"
+          const studentName = (r["nama_siswa"] as string) || (r["Siswa"] as string) || (r["id"] ? `Magang #${r["id"]}` : `Siswa ${idx + 1}`)
+          const companyName = (r["nama_dudi"] as string) || (r["nama_perusahaan"] as string) || (r["DUDI"] as string) || "-"
+          const startDate = (r["tanggal_mulai"] as string) || (r["periode_mulai"] as string) || (r["Mulai"] as string) || "-"
+          const endDate = (r["tanggal_selesai"] as string) || (r["periode_selesai"] as string) || (r["Selesai"] as string) || "-"
+          const rawStatus = (r["status"] as string) || (r["Status"] as string) || "Pending"
           const normalizedStatus: LatestMagangItem["status"] = rawStatus.toLowerCase() === "aktif"
             ? "Aktif"
             : rawStatus.toLowerCase() === "selesai"
@@ -118,10 +117,10 @@ export function SectionLatestMagang({ items, compact = false, minHeightClass }: 
         if (!isMounted) return
         setMagangData(mapped)
       } catch (e) {
-        // DASHBOARD_MAGANG_FALLBACK: Jika terjadi error, jangan patahkan UI: tampilkan dummy sebagai fallback
+        // If error occurs, show empty state instead of dummy data
         console.error("SectionLatestMagang load error:", e)
         if (!isMounted) return
-        setMagangData(latestMagangDummy)
+        setMagangData([])
       } finally {
         if (isMounted) setLoading(false)
       }
@@ -235,42 +234,3 @@ export function SectionLatestMagang({ items, compact = false, minHeightClass }: 
     </section>
   )
 }
-
-// DASHBOARD_MAGANG_FALLBACK: Helper: contoh data dummy untuk dipakai cepat di halaman
-export const latestMagangDummy: LatestMagangItem[] = [
-  {
-    id: "1",
-    studentName: "Ahmad Rizki",
-    companyName: "PT. Teknologi Nusantara",
-    startDate: "15/1/2024",
-    endDate: "15/4/2024",
-    status: "Aktif",
-  },
-
-  {
-    id: "2",
-    studentName: "Siti Nurhaliza",
-    companyName: "CV. Digital Kreativa",
-    startDate: "20/02/2024",
-    endDate: "20/04/2024",
-    status: "Aktif",
-  },
-  
-  {
-    id: "3",
-    studentName: "Budi Santoso",
-    companyName: "PT. Inovasi Mandiri",
-    startDate: "01/03/2024",
-    endDate: "01/06/2024",
-    status: "Selesai",
-  },
-
-  {
-    id: "4",
-    studentName: "japip hiro",
-    companyName: "PT. Mandiri",
-    startDate: "01/03/2025",
-    endDate: "01/06/2025",
-    status: "Selesai",
-  },
-]

@@ -29,9 +29,16 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { IconUser, IconEdit, IconTrash, IconPlus, IconSearch, IconStar, IconQrcode } from "@tabler/icons-react" // Ikon
+import { IconUser, IconEdit, IconTrash, IconPlus, IconSearch, IconStar, IconQrcode, IconChevronDown } from "@tabler/icons-react" // Ikon
 import { toast } from "sonner" // Notifikasi ringan
+import { showGuruAction } from "@/lib & database connection/utils" // Toast guru action
 import { QrModal } from "./qr-modal" // Modal QR Code
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
 
 // Bentuk data baris yang dipakai di tabel (hasil mapping dari tabel "magang")
 export type MagangItem = {
@@ -116,6 +123,7 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
         nama_perusahaan?: string
         Mulai?: string
         Selesai?: string
+        status?: string
         Status?: string
         nilai?: number
         id?: string | number
@@ -125,7 +133,8 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
       // - Tentukan primary key yang tersedia: gunakan `id` jika ada, fallback ke kolom "Siswa"
       // - Satukan kemungkinan variasi kolom DUDI (DUDI/nama_dudi/nama_perusahaan)
       const mapped: MagangItem[] = (magangDataRes as MagangRow[] | null || []).map((row) => {
-        const rawStatus = typeof row["Status"] === "string" ? row["Status"] : undefined
+        // Ambil status dari kolom "status" (lowercase) atau "Status" (uppercase)
+        const rawStatus = (row["status"] ?? row["Status"]) as string | undefined
         const normalizedStatus =
           rawStatus === "Aktif" || rawStatus === "Selesai" || rawStatus === "Pending"
             ? rawStatus
@@ -216,8 +225,52 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
 
   const totalPages = Math.ceil(filteredData.length / pageSize)
 
-  // Hapus data baris tertentu berdasarkan kolom primary key yang tersedia
-  const handleDelete = async (id: string | number, pkColumn?: "id" | "Siswa") => {
+  // Helper untuk update status magang dengan error handling yang jelas
+  // Catatan: tabel `magang` saat ini tidak memiliki kolom `id` di database,
+  // sehingga kita gunakan kolom `Siswa` (nama siswa) sebagai key update.
+  const updateStatus = React.useCallback(
+    async (item: MagangItem, targetStatus: "Pending" | "Aktif" | "Selesai") => {
+      try {
+        if (!supabaseBrowser) {
+          toast.error("Konfigurasi database tidak lengkap")
+          return
+        }
+
+        const { error, status, statusText } = await supabaseBrowser
+          .from("magang")
+          .update({ status: targetStatus })
+          .eq("Siswa", item.nama_siswa)
+
+        if (error || (status && status >= 400)) {
+          const details = error?.message || statusText || "Unknown error"
+          console.error("Gagal update status magang", {
+            itemId: item.id,
+            nama_siswa: item.nama_siswa,
+            targetStatus,
+            error,
+            status,
+            statusText,
+          })
+          toast.error(`Gagal memperbarui status (${details})`)
+          return
+        }
+
+        showGuruAction(
+          `Status magang ${item.nama_siswa} diperbarui menjadi ${targetStatus}`,
+          "Verifikasi Magang",
+        )
+        loadData()
+      } catch (err) {
+        console.error("Error tak terduga saat update status magang", err)
+        const details = err instanceof Error ? err.message : String(err)
+        toast.error(`Terjadi kesalahan (${details})`)
+      }
+    },
+    [loadData],
+  )
+
+  // Hapus data baris tertentu (gunakan kolom Siswa sebagai key)
+  const handleDelete = async (id: string | number) => {
     // Tampilkan toast konfirmasi dengan action buttons
     toast("Apakah Anda yakin ingin menghapus data magang ini?", {
       action: {
@@ -228,16 +281,19 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
               toast.error("Konfigurasi database tidak lengkap")
               return
             }
-            const targetColumn = pkColumn || "Siswa"
+            
+            // Gunakan column 'Siswa' sebagai key delete
             const { error } = await supabaseBrowser!
               .from("magang")
               .delete()
-              .eq(targetColumn, id)
+              .eq("Siswa", id)
 
             if (error) {
               throw new Error(`Delete error: ${error.message}`)
             }
-            toast.success("Data magang berhasil dihapus")
+            
+            // Toast guru action (white bg, black text)
+            showGuruAction("Data magang berhasil dihapus dari sistem", "Hapus Data")
             loadData()
           } catch (error) {
             const details = error instanceof Error ? error.message : String(error)
@@ -496,30 +552,46 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
                         >
                           <IconEdit className="size-4" />
                         </Button>
-                        {/* Toggle verifikasi/aktif: jika "Aktif" maka ubah ke "Pending", sebaliknya ke "Aktif" */}
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={async () => {
-                            try {
-                              if (!supabaseBrowser) return
-                              const next = item.status === "Aktif" ? "Pending" : "Aktif"
-                              const targetColumn = item.pkColumn || "Siswa"
-                              const { error } = await supabaseBrowser
-                                .from("magang")
-                                .update({ status: next })
-                                .eq(targetColumn, item.id)
-                              if (!error) {
-                                toast.success(`Status diperbarui menjadi ${next}`)
-                                loadData()
-                              }
-                            } catch {}
-                          }}
-                          className="h-8 px-2 text-xs"
-                          title="Verifikasi"
-                        >
-                          Verifikasi
-                        </Button>
+                        {/* Dropdown verifikasi: pilih Pending, Aktif, atau Selesai */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 px-2 text-xs bg-white border-slate-200 hover:bg-slate-50"
+                              title="Verifikasi"
+                            >
+                              Verifikasi
+                              <IconChevronDown className="ml-1 h-3 w-3" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent
+                            align="end"
+                            className="min-w-[140px] bg-white border border-slate-200 shadow-lg rounded-md p-1"
+                          >
+                            <DropdownMenuItem
+                              onClick={async () => {
+                                await updateStatus(item, "Pending")
+                              }}
+                            >
+                              Pending
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={async () => {
+                                await updateStatus(item, "Aktif")
+                              }}
+                            >
+                              Aktif
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={async () => {
+                                await updateStatus(item, "Selesai")
+                              }}
+                            >
+                              Selesai
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                         {onNilai && item.status === "Selesai" && (
                           // Beri nilai hanya jika status selesai
                           <Button
@@ -536,7 +608,7 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
                         <Button
                           size="sm"
                           variant="ghost"
-                          onClick={() => handleDelete(item.id, item.pkColumn)}
+                          onClick={() => handleDelete(item.id)}
                           className="h-8 w-8 p-0 text-red-600 hover:bg-red-50"
                         >
                           <IconTrash className="size-4" />

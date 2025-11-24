@@ -66,28 +66,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const { data: { session } } = await supabaseBrowser.auth.getSession()
         
         if (session?.user && mounted) {
-          // Try to get avatar from users table first
+          // Load user data from database for consistency
           let avatarUrl = session.user.user_metadata?.avatar_url
+          let fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split("@")[0] || "User"
+          let username = session.user.user_metadata?.username || session.user.email?.split("@")[0] || "user"
           
           try {
             const { data: dbUser } = await supabaseBrowser
               .from('users')
-              .select('avatar')
+              .select('avatar, full_name, username')
               .eq('id', session.user.id)
               .maybeSingle()
             
-            if (dbUser?.avatar) {
-              avatarUrl = dbUser.avatar
+            if (dbUser) {
+              // Prefer database values over metadata for consistency
+              if (dbUser.avatar) avatarUrl = dbUser.avatar
+              if (dbUser.full_name) fullName = dbUser.full_name
+              if (dbUser.username) username = dbUser.username
             }
           } catch (error) {
-            console.log('Could not load avatar from database, using metadata:', error)
+            console.log('Could not load user data from database, using metadata:', error)
           }
           
           const userData: User = {
             id: session.user.id,
             email: session.user.email || "",
-            fullName: session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split("@")[0] || "User",
-            username: session.user.user_metadata?.username || session.user.email?.split("@")[0] || "user",
+            fullName,
+            username,
             avatar: avatarUrl,
             provider: (session.user.app_metadata?.provider as "email" | "google" | "github") || "email"
           }
@@ -99,28 +104,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           console.log("Auth state change:", event)
           
           if (session?.user && mounted) {
-            // Try to get avatar from users table first
+            // Load user data from database for consistency
             let avatarUrl = session.user.user_metadata?.avatar_url
+            let fullName = session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split("@")[0] || "User"
+            let username = session.user.user_metadata?.username || session.user.email?.split("@")[0] || "user"
             
             try {
               const { data: dbUser } = await supabaseBrowser
                 .from('users')
-                .select('avatar')
+                .select('avatar, full_name, username')
                 .eq('id', session.user.id)
                 .maybeSingle()
               
-              if (dbUser?.avatar) {
-                avatarUrl = dbUser.avatar
+              if (dbUser) {
+                // Prefer database values over metadata for consistency
+                if (dbUser.avatar) avatarUrl = dbUser.avatar
+                if (dbUser.full_name) fullName = dbUser.full_name
+                if (dbUser.username) username = dbUser.username
               }
             } catch (error) {
-              console.log('Could not load avatar from database, using metadata:', error)
+              console.log('Could not load user data from database, using metadata:', error)
             }
             
             const userData: User = {
               id: session.user.id,
               email: session.user.email || "",
-              fullName: session.user.user_metadata?.full_name || session.user.user_metadata?.name || session.user.email?.split("@")[0] || "User",
-              username: session.user.user_metadata?.username || session.user.email?.split("@")[0] || "user",
+              fullName,
+              username,
               avatar: avatarUrl,
               provider: (session.user.app_metadata?.provider as "email" | "google" | "github") || "email"
             }
@@ -319,14 +329,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const logout = async () => {
     try {
+      console.log('[Auth] Logging out...')
       const { supabaseBrowser } = await import("@/lib & database connection/supabase-browser")
       if (supabaseBrowser) {
         await supabaseBrowser.auth.signOut()
+        console.log('[Auth] Supabase signOut completed')
       }
       setUser(null)
+      console.log('[Auth] User state cleared')
+      
+      // Redirect to home/login page after logout
+      if (typeof window !== 'undefined') {
+        window.location.href = '/'
+      }
     } catch (error) {
       console.error("Logout error:", error)
       setUser(null) // Force logout anyway
+      // Still redirect even if error
+      if (typeof window !== 'undefined') {
+        window.location.href = '/'
+      }
     }
   }
 

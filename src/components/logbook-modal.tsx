@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { supabaseBrowser } from "@/lib & database connection/supabase-browser"
-import { sendPushToRole } from "@/lib & database connection/send-push"
+import { useAuth } from "@/context/auth-context"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -15,6 +15,7 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Select,
   SelectContent,
@@ -23,6 +24,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { showSuccess, showError, showInfo } from "@/lib & database connection/utils"
+import { createNotificationForAll } from "@/lib & database connection/create-notification"
 
 export type LogbookItem = {
   id: string | number
@@ -48,6 +50,7 @@ type LogbookModalProps = {
 }
 
 export function LogbookModal({ open, onOpenChange, logbook, onSuccess, mode, defaultNamaSiswa }: LogbookModalProps) {
+  const { user } = useAuth()
   const [formData, setFormData] = React.useState({
     nama_siswa: "",
     tanggal: "",
@@ -61,6 +64,7 @@ export function LogbookModal({ open, onOpenChange, logbook, onSuccess, mode, def
   const [loading, setLoading] = React.useState(false)
   const [uploading, setUploading] = React.useState(false)
   const [dragActive, setDragActive] = React.useState(false)
+  const [compressImage, setCompressImage] = React.useState(true)
 
   React.useEffect(() => {
     if (logbook) {
@@ -129,11 +133,12 @@ export function LogbookModal({ open, onOpenChange, logbook, onSuccess, mode, def
 
        showSuccess("Data logbook berhasil diperbarui")
       } else {
-        // Create new data
+        // Create new data with user_id
         const { error, status, statusText } = await supabaseBrowser
           .from("logbook")
           .insert([{
-            ...dataToSubmit
+            ...dataToSubmit,
+            user_id: user?.id || null // Add user_id for filtering
           }])
           .select('*')
 
@@ -145,15 +150,43 @@ export function LogbookModal({ open, onOpenChange, logbook, onSuccess, mode, def
 
         showSuccess("Data logbook berhasil ditambahkan")
         
-        // Send push notification to all guru
-        sendPushToRole('guru', {
-          title: '📖 Logbook Baru',
-          body: `${formData.nama_siswa} mengirim logbook: ${formData.kegiatan.substring(0, 50)}...`,
-          url: '/logbook'
-        }).catch(err => console.error('Push notification error:', err))
+        // Send push notification to ALL subscribed devices (Windows notification)
+        fetch('/api/test-push-all', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: '📖 Logbook Baru',
+            body: `${formData.nama_siswa} mengirim logbook: ${formData.kegiatan.substring(0, 50)}...`,
+            icon: '/icons/icon-192x192.png',
+            url: '/logbook'
+          })
+        })
+        .then(res => res.json())
+        .then(data => console.log('✅ Push notification sent to', data.sent, 'device(s)'))
+        .catch(err => console.error('❌ Push notification error:', err))
+        
+        // Create in-app notification for ALL users (bell icon notification)
+        createNotificationForAll({
+          title: "Logbook Baru",
+          message: `${formData.nama_siswa} mengirim logbook: ${formData.kegiatan.substring(0, 50)}...`,
+          type: "logbook",
+          senderName: formData.nama_siswa,
+          senderId: user?.id,
+          actionUrl: "/logbook"
+        })
+        .then(result => {
+          if (result.success) {
+            console.log(`✅ In-app notification created for ${result.count} user(s) (all roles) `)
+          }
+        })
+        .catch(err => console.error('❌ In-app notification error:', err))
       }
 
+      // Trigger data refresh first
       onSuccess()
+      
+      // Small delay to allow Realtime to sync before closing modal
+      await new Promise(resolve => setTimeout(resolve, 300))
       onOpenChange(false)
     } catch (error) {
       console.error("Error saving logbook data:", error)
@@ -311,8 +344,8 @@ export function LogbookModal({ open, onOpenChange, logbook, onSuccess, mode, def
         showInfo("Attempting upload to Logbook-media bucket...")
       }
       
-      // Convert images to WebP
-      if (isImage) {
+      // Convert images to WebP (optional via checkbox)
+      if (isImage && compressImage) {
         try {
           fileToUpload = await convertToWebP(file)
           showInfo("Mengkonversi gambar ke format WebP...")
@@ -442,7 +475,7 @@ export function LogbookModal({ open, onOpenChange, logbook, onSuccess, mode, def
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+      <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto bg-white border border-slate-200 shadow-xl">
         <DialogHeader>
           <DialogTitle>{getTitle()}</DialogTitle>
           <DialogDescription>
@@ -650,18 +683,30 @@ export function LogbookModal({ open, onOpenChange, logbook, onSuccess, mode, def
             
             {/* Dropzone */}
             {mode !== "review" && (
-              <div
-                onDragEnter={(e)=>{e.preventDefault(); setDragActive(true)}}
-                onDragOver={(e)=>{e.preventDefault(); setDragActive(true)}}
-                onDragLeave={(e)=>{e.preventDefault(); setDragActive(false)}}
-                onDrop={onDrop}
-                onClick={onBrowseClick}
-                className={`mt-2 flex cursor-pointer flex-col items-center justify-center rounded-md border border-dashed px-4 py-6 text-sm transition-colors ${dragActive ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-blue-400"}`}
-              >
-                <p className="text-gray-600">📷 Seret & lepas foto/video ke sini, atau klik untuk memilih file</p>
-                <p className="text-gray-500 mt-1">Foto: Maksimal 5MB (auto-convert ke WebP) • Video: Maksimal 50MB</p>
-                {uploading && <p className="text-blue-600 mt-2">Mengunggah media...</p>}
-              </div>
+              <>
+                <div
+                  onDragEnter={(e)=>{e.preventDefault(); setDragActive(true)}}
+                  onDragOver={(e)=>{e.preventDefault(); setDragActive(true)}}
+                  onDragLeave={(e)=>{e.preventDefault(); setDragActive(false)}}
+                  onDrop={onDrop}
+                  onClick={onBrowseClick}
+                  className={`mt-2 flex cursor-pointer flex-col items-center justify-center rounded-md border border-dashed px-4 py-6 text-sm transition-colors ${dragActive ? "border-blue-500 bg-blue-50" : "border-gray-300 hover:border-blue-400"}`}
+                >
+                  <p className="text-gray-600">📷 Seret & lepas foto/video ke sini, atau klik untuk memilih file</p>
+                  <p className="text-gray-500 mt-1">Foto: Maksimal 5MB • Video: Maksimal 50MB</p>
+                  {uploading && <p className="text-blue-600 mt-2">Mengunggah media...</p>}
+                </div>
+                <div className="mt-2 flex items-center gap-2 text-xs text-gray-600">
+                  <Checkbox
+                    id="compress-image"
+                    checked={compressImage}
+                    onCheckedChange={(v) => setCompressImage(!!v)}
+                  />
+                  <label htmlFor="compress-image" className="cursor-pointer select-none">
+                    Kompresi foto ke format WebP sebelum upload (disarankan)
+                  </label>
+                </div>
+              </>
             )}
           </div>
 

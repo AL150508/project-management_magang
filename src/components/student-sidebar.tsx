@@ -17,8 +17,8 @@ import { IconHome, IconBuilding, IconSchool, IconNotebook, IconX, IconMenu2 } fr
 import { cn, showConfirmation, showSuccess } from "@/lib & database connection/utils"
 import { useAuth } from "@/context/auth-context"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Button } from "@/components/ui/button"
 import { NotificationToggle } from "@/components/notification-toggle"
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 
 // Properti yang diperlukan Sidebar Siswa
 interface StudentSidebarProps {
@@ -201,13 +201,15 @@ export function StudentSidebar({ activeItem, onItemClick }: StudentSidebarProps)
             <div className="p-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
+                  <button
                     className="w-full flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
                   >
-                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-xs flex-shrink-0">
-                      {user?.fullName?.charAt(0)?.toUpperCase() || user?.username?.charAt(0)?.toUpperCase() || "A"}
-                    </div>
+                    <Avatar className="w-8 h-8 flex-shrink-0">
+                      <AvatarImage src={user?.avatar} alt={user?.fullName || user?.username} />
+                      <AvatarFallback className="bg-blue-600 text-white font-semibold text-xs">
+                        {user?.fullName?.charAt(0)?.toUpperCase() || user?.username?.charAt(0)?.toUpperCase() || "A"}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="flex-1 min-w-0 text-left">
                       <p className="text-sm font-medium text-gray-900 truncate">
                         {user?.fullName || user?.username || "alvasya_RPL1"}
@@ -217,14 +219,17 @@ export function StudentSidebar({ activeItem, onItemClick }: StudentSidebarProps)
                       </p>
                     </div>
                     <ChevronDown className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                  </Button>
+                  </button>
                 </DropdownMenuTrigger>
                 
                 <DropdownMenuContent align="end" className="w-56">
                   <div className="flex items-center gap-3 p-3">
-                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-xs">
-                      {user?.fullName?.charAt(0)?.toUpperCase() || user?.username?.charAt(0)?.toUpperCase() || "A"}
-                    </div>
+                    <Avatar className="w-8 h-8">
+                      <AvatarImage src={user?.avatar} alt={user?.fullName || user?.username} />
+                      <AvatarFallback className="bg-blue-600 text-white font-semibold text-xs">
+                        {user?.fullName?.charAt(0)?.toUpperCase() || user?.username?.charAt(0)?.toUpperCase() || "A"}
+                      </AvatarFallback>
+                    </Avatar>
                     <div className="flex flex-col">
                       <span className="text-sm font-medium text-slate-900">
                         {user?.fullName || user?.username || "alvasya_RPL1"}
@@ -283,61 +288,35 @@ export function StudentSidebar({ activeItem, onItemClick }: StudentSidebarProps)
               </DropdownMenu>
             </div>
           ) : (
-            <div className="p-4 flex justify-center">
+            <div className="p-2 flex justify-center">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-8 h-8 rounded-full bg-blue-600 hover:bg-blue-700 text-white font-semibold text-xs p-0"
-                  >
-                    {user?.fullName?.charAt(0)?.toUpperCase() || user?.username?.charAt(0)?.toUpperCase() || "A"}
-                  </Button>
+                  <button className="w-10 h-10 rounded-full p-0 overflow-hidden hover:ring-2 hover:ring-blue-500 hover:ring-offset-2 transition-all">
+                    <Avatar className="w-10 h-10">
+                      <AvatarImage src={user?.avatar} alt={user?.fullName || user?.username} />
+                      <AvatarFallback className="bg-blue-600 text-white font-semibold text-sm">
+                        {user?.fullName?.charAt(0)?.toUpperCase() || user?.username?.charAt(0)?.toUpperCase() || "A"}
+                      </AvatarFallback>
+                    </Avatar>
+                  </button>
                 </DropdownMenuTrigger>
                 
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="flex items-center gap-3 p-3">
-                    <div className="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center text-white font-semibold text-xs">
-                      {user?.fullName?.charAt(0)?.toUpperCase() || user?.username?.charAt(0)?.toUpperCase() || "A"}
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-medium text-slate-900">
-                        {user?.fullName || user?.username || "alvasya_RPL1"}
-                      </span>
-                      <span className="text-xs text-slate-500">
-                        @{user?.username || "alvasya"}
-                      </span>
-                    </div>
-                  </div>
-                  
-                  <DropdownMenuSeparator />
-                  
+                <DropdownMenuContent 
+                  align="end" 
+                  side="right"
+                  className="w-48 bg-white border border-gray-200 shadow-lg rounded-lg"
+                  sideOffset={8}
+                >
                   <DropdownMenuItem 
-                    className="cursor-pointer"
+                    className="cursor-pointer py-2"
                     onClick={() => router.push('/profile')}
                   >
                     <User className="h-4 w-4 mr-2" />
-                    Profile
+                    <span className="text-sm">Profil</span>
                   </DropdownMenuItem>
                   
                   <DropdownMenuItem 
-                    className="cursor-pointer"
-                    onClick={() => router.push('/profile')}
-                  >
-                    <Settings className="h-4 w-4 mr-2" />
-                    Pengaturan
-                  </DropdownMenuItem>
-                  
-                  <DropdownMenuSeparator />
-                  
-                  <div className="px-2 py-2">
-                    <NotificationToggle />
-                  </div>
-                  
-                  <DropdownMenuSeparator />
-                  
-                  <DropdownMenuItem 
-                    className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                    className="cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 py-2"
                     onClick={() => {
                       showConfirmation({
                         message: "Apakah Anda yakin ingin keluar dari aplikasi?",
@@ -352,7 +331,7 @@ export function StudentSidebar({ activeItem, onItemClick }: StudentSidebarProps)
                     }}
                   >
                     <LogOut className="h-4 w-4 mr-2" />
-                    Keluar
+                    <span className="text-sm">Keluar</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

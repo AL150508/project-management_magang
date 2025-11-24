@@ -33,7 +33,10 @@ export default function MagangDetailPage() {
     const fetchMagangDetail = async () => {
       try {
         setLoading(true)
-        console.log('[MagangDetail] Fetching data for:', params.id)
+        
+        // Decode URL parameter (handle encoded spaces and special characters)
+        const decodedId = decodeURIComponent(String(params.id))
+        console.log('[MagangDetail] Fetching data for:', decodedId)
         
         if (!supabaseBrowser) {
           setError('Database connection not available')
@@ -47,7 +50,7 @@ export default function MagangDetailPage() {
           .select('*')
         
         console.log('[MagangDetail] All magang data:', allData)
-        console.log('[MagangDetail] Looking for:', params.id)
+        console.log('[MagangDetail] Looking for (decoded):', decodedId)
         
         if (allError) {
           console.error('[MagangDetail] Error fetching all data:', allError)
@@ -65,12 +68,27 @@ export default function MagangDetailPage() {
         let data: any = null
         
         // Try to match by various fields (check both possible column names)
-        data = allData.find((item: any) => 
-          item.id === params.id ||
-          item.user_id === params.id ||
-          (item.Siswa && item.Siswa.toLowerCase() === (params.id as string).toLowerCase()) ||
-          (item.nama_siswa && item.nama_siswa.toLowerCase() === (params.id as string).toLowerCase())
-        )
+        // Handle both encoded and raw ID values
+        const searchId = decodedId.toLowerCase().trim()
+        data = allData.find((item: any) => {
+          // Match by ID (numeric or string)
+          if (String(item.id) === decodedId || String(item.id) === String(params.id)) {
+            return true
+          }
+          // Match by user_id
+          if (item.user_id && String(item.user_id).toLowerCase() === searchId) {
+            return true
+          }
+          // Match by Siswa (nama siswa) - case insensitive
+          if (item.Siswa && item.Siswa.toLowerCase().trim() === searchId) {
+            return true
+          }
+          // Match by nama_siswa - case insensitive
+          if (item.nama_siswa && item.nama_siswa.toLowerCase().trim() === searchId) {
+            return true
+          }
+          return false
+        })
 
         if (!data && allData.length > 0) {
           // If still not found but we have data, use the first record for testing
@@ -182,107 +200,96 @@ export default function MagangDetailPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-blue-50 py-8 px-4">
-      <div className="max-w-3xl mx-auto space-y-6">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-white to-gray-50 py-4 sm:py-8 px-4">
+      <div className="max-w-4xl mx-auto space-y-4 sm:space-y-6">
         {/* Header */}
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3 sm:gap-4">
           <Button
             variant="outline"
             size="icon"
             onClick={() => router.back()}
-            className="flex-shrink-0"
+            className="flex-shrink-0 h-9 w-9 sm:h-10 sm:w-10"
           >
             <IconArrowLeft className="w-4 h-4" />
           </Button>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Detail Data Magang</h1>
-            <p className="text-sm text-gray-600">Informasi lengkap data magang siswa</p>
+            <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Detail Data Magang</h1>
+            <p className="text-xs sm:text-sm text-gray-600">Informasi lengkap data magang siswa</p>
           </div>
         </div>
 
-        {/* Main Card */}
-        <Card className="shadow-lg border-blue-100">
-          <CardHeader className="bg-gradient-to-r from-blue-600 to-blue-700 text-white rounded-t-lg">
-            <div className="flex items-start justify-between">
-              <div>
-                <CardTitle className="text-xl mb-2">{magang.nama_siswa}</CardTitle>
-                <CardDescription className="text-blue-100">
-                  {magang.kelas} - {magang.jurusan}
-                </CardDescription>
-              </div>
-              {getStatusBadge(magang.status)}
-            </div>
-          </CardHeader>
-          <CardContent className="p-6 space-y-6">
-            {/* Info Grid - Cleaner Layout */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {/* Main Card - Clean Layout */}
+        <Card className="shadow-lg border-gray-200">
+          <CardContent className="p-4 sm:p-6 space-y-4 sm:space-y-6">
+            {/* Info Grid - Clean & Responsive */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
               {/* Nama */}
-              <div className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
-                <div className="flex-shrink-0 w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                  <IconUser className="w-5 h-5 text-blue-600" />
+              <div className="flex items-center gap-3 p-3 sm:p-4 bg-blue-50/50 border border-blue-100 rounded-xl hover:border-blue-300 transition-all">
+                <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <IconUser className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-500 mb-0.5">Nama</p>
-                  <p className="font-semibold text-gray-900 truncate">{magang.nama_siswa}</p>
+                  <p className="text-xs text-gray-600 mb-1">Nama:</p>
+                  <p className="text-sm sm:text-base font-semibold text-gray-900 truncate">{magang.nama_siswa}</p>
                 </div>
               </div>
 
               {/* Kelas */}
-              <div className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
-                <div className="flex-shrink-0 w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                  <IconSchool className="w-5 h-5 text-blue-600" />
+              <div className="flex items-center gap-3 p-3 sm:p-4 bg-blue-50/50 border border-blue-100 rounded-xl hover:border-blue-300 transition-all">
+                <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <IconSchool className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-500 mb-0.5">Kelas</p>
-                  <p className="font-semibold text-gray-900">{magang.kelas}</p>
+                  <p className="text-xs text-gray-600 mb-1">Kelas:</p>
+                  <p className="text-sm sm:text-base font-semibold text-gray-900">{magang.kelas}</p>
                 </div>
               </div>
 
               {/* Jurusan */}
-              <div className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
-                <div className="flex-shrink-0 w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                  <IconMapPin className="w-5 h-5 text-blue-600" />
+              <div className="flex items-center gap-3 p-3 sm:p-4 bg-blue-50/50 border border-blue-100 rounded-xl hover:border-blue-300 transition-all">
+                <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <IconMapPin className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-500 mb-0.5">Jurusan</p>
-                  <p className="font-semibold text-gray-900">{magang.jurusan}</p>
+                  <p className="text-xs text-gray-600 mb-1">Jurusan:</p>
+                  <p className="text-sm sm:text-base font-semibold text-gray-900">{magang.jurusan}</p>
                 </div>
               </div>
 
               {/* DUDI */}
-              <div className="flex items-center gap-3 p-3 bg-white border border-gray-200 rounded-lg hover:border-blue-300 transition-colors">
-                <div className="flex-shrink-0 w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center">
-                  <IconBuilding className="w-5 h-5 text-blue-600" />
+              <div className="flex items-center gap-3 p-3 sm:p-4 bg-blue-50/50 border border-blue-100 rounded-xl hover:border-blue-300 transition-all">
+                <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <IconBuilding className="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-xs text-gray-500 mb-0.5">DUDI</p>
-                  <p className="font-semibold text-gray-900 truncate">{magang.dudi_name}</p>
+                  <p className="text-xs text-gray-600 mb-1">DUDI:</p>
+                  <p className="text-sm sm:text-base font-semibold text-gray-900 truncate">{magang.dudi_name}</p>
                 </div>
               </div>
             </div>
 
             {/* Periode - Full Width */}
-            <div className="flex items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-blue-100 rounded-lg border border-blue-200">
-              <div className="flex-shrink-0 w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center shadow-md">
-                <IconCalendar className="w-6 h-6 text-white" />
+            <div className="flex items-center gap-3 sm:gap-4 p-4 sm:p-5 bg-gradient-to-r from-blue-50 to-blue-100 rounded-xl border border-blue-200">
+              <div className="flex-shrink-0 w-12 h-12 sm:w-14 sm:h-14 bg-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                <IconCalendar className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
               </div>
-              <div className="flex-1">
-                <p className="text-xs text-blue-700 font-medium mb-1">Periode Magang</p>
-                <p className="text-base font-bold text-gray-900">
+              <div className="flex-1 min-w-0">
+                <p className="text-xs sm:text-sm text-blue-700 font-medium mb-1">Periode:</p>
+                <p className="text-sm sm:text-base font-bold text-gray-900 break-words">
                   {formatDate(magang.tanggal_mulai)} - {formatDate(magang.tanggal_selesai)}
                 </p>
               </div>
             </div>
 
-            {/* Status - Removed duplicate badge, cleaner display */}
-            <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-              <div className="flex items-center gap-3">
-                <div className="flex-shrink-0 w-10 h-10 bg-white rounded-lg flex items-center justify-center border border-gray-200">
-                  <IconClock className="w-5 h-5 text-gray-600" />
+            {/* Status - Clean, No Duplicate Badge */}
+            <div className="flex items-center justify-between p-4 sm:p-5 bg-gray-50 rounded-xl border border-gray-200">
+              <div className="flex items-center gap-3 sm:gap-4">
+                <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 bg-white rounded-lg flex items-center justify-center border border-gray-200 shadow-sm">
+                  <IconClock className="w-5 h-5 sm:w-6 sm:h-6 text-gray-600" />
                 </div>
                 <div>
-                  <p className="text-xs text-gray-500 mb-0.5">Status Magang</p>
-                  <p className="text-sm font-semibold text-gray-900">{magang.status}</p>
+                  <p className="text-xs text-gray-600 mb-1">Status:</p>
+                  <p className="text-sm sm:text-base font-semibold text-gray-900">{magang.status}</p>
                 </div>
               </div>
               {getStatusBadge(magang.status)}

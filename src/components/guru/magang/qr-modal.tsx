@@ -44,11 +44,13 @@ export function QrModal({
   const qrRef = React.useRef<HTMLDivElement>(null)
   
   // Generate URL untuk QR Code
+  // Encode ID untuk handle spasi dan special characters
   const qrUrl = React.useMemo(() => {
+    const encodedId = encodeURIComponent(String(id))
     if (typeof window !== 'undefined') {
-      return `${window.location.origin}/magang/detail/${id}`
+      return `${window.location.origin}/magang/detail/${encodedId}`
     }
-    return `https://localhost:3000/magang/detail/${id}`
+    return `https://localhost:3000/magang/detail/${encodedId}`
   }, [id])
 
   // Copy URL ke clipboard
@@ -274,9 +276,9 @@ export function QrModal({
           <Button
             onClick={handleDownloadQr}
             disabled={isDownloading}
-            className="flex-1 bg-blue-600 hover:bg-blue-700 order-1 sm:order-2"
+            className="flex-1 bg-blue-600 hover:bg-blue-700 !text-white disabled:!text-white order-1 sm:order-2"
           >
-            <IconDownload className="size-3 sm:size-4 mr-2" />
+            <IconDownload className="size-3 sm:size-4 mr-2 text-white" />
             {isDownloading ? "Mengunduh..." : "Download"}
           </Button>
         </DialogFooter>

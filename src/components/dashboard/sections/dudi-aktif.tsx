@@ -42,40 +42,83 @@ export function SectionDudiAktif({ items }: { items?: DudiItem[] }) {
     let mounted = true
     const load = async () => {
       try {
-        if (items && items.length) {
-          setData(items)
+        // Jika Supabase tidak tersedia, gunakan data dari props (jika ada)
+        if (!supabaseBrowser) {
+          if (items && items.length) {
+            setData(items)
+          }
           return
         }
-        if (!supabaseBrowser) return
+
         // Ambil daftar DUDI
         const { data: dudiRows, error: dErr } = await supabaseBrowser
           .from("dudi")
           .select("*")
           .order("created_at", { ascending: false })
         if (dErr) throw dErr
-        // Ambil magang untuk hitung jumlah siswa per DUDI (abaikan Ditolak)
+
+        // Ambil magang untuk hitung jumlah siswa per DUDI (abaikan yang statusnya Ditolak)
         const { data: magangRows } = await supabaseBrowser
           .from("magang")
           .select("DUDI,nama_dudi,nama_perusahaan,Status,status")
+
         type MagangRow = { DUDI?: string; nama_dudi?: string; nama_perusahaan?: string; Status?: string; status?: string }
-        const countMap = ((magangRows as MagangRow[] | null) || []).reduce((acc: Record<string, number>, r: MagangRow) => {
-          const st = (r.Status ?? r.status ?? "").toString()
-          if (st === "Ditolak") return acc
-          const nm = (r.DUDI ?? r.nama_dudi ?? r.nama_perusahaan ?? "").toString().trim().toLowerCase()
-          if (!nm) return acc
-          acc[nm] = (acc[nm] || 0) + 1
-          return acc
-        }, {})
-        type DudiRow = { id: string | number; nama_perusahaan?: string; nama?: string; perusahaan?: string; alamat?: string; address?: string; telepon?: string; phone?: string; bidang_usaha?: string; industri?: string }
-        const mapped: DudiItem[] = ((dudiRows as DudiRow[] | null) || []).map((r: DudiRow) => ({
-          id: r.id,
-          name: r.nama_perusahaan || r.nama || r.perusahaan || `DUDI #${r.id}`,
-          address: r.alamat || r.address || undefined,
-          phone: r.telepon || r.phone || undefined,
-          industry: r.bidang_usaha || r.industri || undefined,
-          count: countMap[((r.nama_perusahaan || r.nama || r.perusahaan || "").toString().trim().toLowerCase())] || 0,
-        }))
-        console.log("SectionDudiAktif: dudiRows=", (dudiRows||[]).length, "mapped=", mapped.length)
+
+        const countMap = ((magangRows as MagangRow[] | null) || []).reduce(
+          (acc: Record<string, number>, r: MagangRow) => {
+            const st = (r.Status ?? r.status ?? "").toString().trim()
+            // Hanya abaikan yang benar-benar Ditolak, lainnya (Pending/Aktif/Selesai) tetap dihitung
+            if (st === "Ditolak") return acc
+
+            const nm = (r.DUDI ?? r.nama_dudi ?? r.nama_perusahaan ?? "")
+              .toString()
+              .trim()
+              .toLowerCase()
+            if (!nm) return acc
+
+            acc[nm] = (acc[nm] || 0) + 1
+            return acc
+          },
+          {},
+        )
+
+        type DudiRow = {
+          id: string | number
+          nama_perusahaan?: string
+          nama?: string
+          perusahaan?: string
+          alamat?: string
+          address?: string
+          telepon?: string
+          phone?: string
+          bidang_usaha?: string
+          industri?: string
+        }
+
+        const mapped: DudiItem[] = ((dudiRows as DudiRow[] | null) || []).map((r: DudiRow) => {
+          const baseName = (r.nama_perusahaan || r.nama || r.perusahaan || "")
+            .toString()
+            .trim()
+          const key = baseName.toLowerCase()
+
+          return {
+            id: r.id,
+            name: baseName || `DUDI #${r.id}`,
+            address: r.alamat || r.address || undefined,
+            phone: r.telepon || r.phone || undefined,
+            industry: r.bidang_usaha || r.industri || undefined,
+            count: countMap[key] || 0,
+          }
+        })
+
+        console.log(
+          "SectionDudiAktif:",
+          "dudiRows=",
+          (dudiRows || []).length,
+          "mapped=",
+          mapped.length,
+        )
+
         if (mounted) {
           setData(mapped)
           // Reset halaman agar tidak berada di page yang tidak valid setelah data berubah
@@ -87,6 +130,7 @@ export function SectionDudiAktif({ items }: { items?: DudiItem[] }) {
         if (mounted) setLoading(false)
       }
     }
+
     load()
     // Realtime refresh saat dudi/magang berubah
     const ch1 = supabaseBrowser?.channel("realtime-dudi-aktif")
@@ -116,7 +160,7 @@ export function SectionDudiAktif({ items }: { items?: DudiItem[] }) {
 
   return (
     <section className="px-2 sm:px-4 lg:px-6">
-      <div className="rounded-xl border border-blue-100/60 bg-white shadow-sm backdrop-blur">
+      <div className="rounded-xl border border-blue-100/60 bg-white shadow-sm">
         <header className="flex items-center justify-between px-4 py-3 border-b border-slate-100">
           <div className="flex items-center gap-2">
             <div className="bg-blue-500/15 text-blue-700 ring-1 ring-blue-200/60 flex size-7 items-center justify-center rounded-lg">
@@ -155,7 +199,7 @@ export function SectionDudiAktif({ items }: { items?: DudiItem[] }) {
           ) : (
           <div className="space-y-2">
             {currentItems.map((dudi) => (
-                        <div key={dudi.id} className="rounded-lg border border-slate-100 bg-slate-50/50 p-2.5 hover:shadow-sm transition-all">
+                        <div key={dudi.id} className="rounded-lg border border-slate-100 bg-white p-2.5 hover:shadow-sm transition-all">
                 <div className="flex items-start justify-between gap-2 min-w-0">
                   <div className="min-w-0 flex-1">
                     <h4 className="font-medium text-xs text-slate-900 break-words leading-tight">{dudi.name}</h4>

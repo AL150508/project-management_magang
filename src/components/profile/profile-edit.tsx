@@ -5,44 +5,39 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-import { Camera } from "lucide-react"
 import { useAuth } from "@/context/auth-context"
 import { toast } from "sonner"
+import { Eye, EyeOff } from "lucide-react"
 import { AvatarCropModal } from "./avatar-crop-modal"
 import { uploadAvatar, updateUserAvatar } from "@/lib & database connection/avatar-upload-helper"
+import { supabaseBrowser } from "@/lib & database connection/supabase-browser"
 
 interface ProfileEditProps {
-  onCancel: () => void
   onSave: () => void
 }
 
-export function ProfileEdit({ onCancel, onSave }: ProfileEditProps) {
+export function ProfileEdit({ onSave }: ProfileEditProps) {
   const { user, setUser } = useAuth()
   const [formData, setFormData] = React.useState({
     fullName: user?.fullName || "",
-    displayName: user?.username || "",
-    username: user?.username || "",
-    gender: "",
-    birthDate: "",
-    phone: "",
-    province: "",
-    city: "",
-    occupation: "",
-    bio: ""
+    email: user?.email || ""
   })
+  
+  const [passwordData, setPasswordData] = React.useState({
+    newPassword: "",
+    confirmPassword: ""
+  })
+  
+  const [isChangingPassword, setIsChangingPassword] = React.useState(false)
   const [avatarPreview, setAvatarPreview] = React.useState<string | null>(user?.avatar || null)
   const [isUploading, setIsUploading] = React.useState(false)
   const fileInputRef = React.useRef<HTMLInputElement>(null)
   const [cropModalOpen, setCropModalOpen] = React.useState(false)
   const [selectedImage, setSelectedImage] = React.useState<string | null>(null)
+  
+  // State untuk show/hide password
+  const [showNewPassword, setShowNewPassword] = React.useState(false)
+  const [showConfirmPassword, setShowConfirmPassword] = React.useState(false)
 
   const initials = (user?.fullName || user?.username || "U")
     .split(" ")
@@ -53,6 +48,62 @@ export function ProfileEdit({ onCancel, onSave }: ProfileEditProps) {
 
   const handleChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }))
+  }
+  
+  const handlePasswordChange = (field: string, value: string) => {
+    setPasswordData(prev => ({ ...prev, [field]: value }))
+  }
+  
+  const handleChangePassword = async () => {
+    if (!passwordData.newPassword || passwordData.newPassword.length < 6) {
+      toast.error('Password baru minimal 6 karakter')
+      return
+    }
+    
+    if (passwordData.newPassword !== passwordData.confirmPassword) {
+      toast.error('Konfirmasi password tidak cocok')
+      return
+    }
+    
+    if (!user?.email) {
+      toast.error('Email tidak ditemukan. Silakan login kembali.')
+      return
+    }
+    
+    try {
+      setIsChangingPassword(true)
+      
+      if (!supabaseBrowser) {
+        throw new Error('Supabase client not initialized')
+      }
+      
+      // Update password directly (user is already authenticated)
+      console.log('🔐 Updating password...')
+      
+      const { error: updateError } = await supabaseBrowser.auth.updateUser({
+        password: passwordData.newPassword
+      })
+      
+      if (updateError) {
+        console.error('❌ Update error:', updateError)
+        throw updateError
+      }
+      
+      console.log('✅ Password updated successfully in Supabase Auth')
+      toast.success('Password berhasil diubah! Gunakan password baru ini untuk login berikutnya.')
+      
+      // Reset password fields
+      setPasswordData({
+        newPassword: "",
+        confirmPassword: ""
+      })
+    } catch (error) {
+      console.error('❌ Password change error:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Gagal mengubah password'
+      toast.error(errorMessage)
+    } finally {
+      setIsChangingPassword(false)
+    }
   }
 
   // Handle avatar file selection
@@ -91,10 +142,17 @@ export function ProfileEdit({ onCancel, onSave }: ProfileEditProps) {
     try {
       setIsUploading(true)
 
-      if (!user) return
+      if (!user) {
+        toast.error('Session expired. Silakan login kembali.')
+        return
+      }
+
+      console.log('🖼️ Starting avatar upload for user:', user.id)
 
       // Upload to Supabase Storage
       const { url } = await uploadAvatar(croppedBlob, user.id)
+
+      console.log('✅ Upload successful, updating database...')
 
       // Update database
       await updateUserAvatar(user.id, url)
@@ -106,9 +164,18 @@ export function ProfileEdit({ onCancel, onSave }: ProfileEditProps) {
       setAvatarPreview(url)
 
       toast.success('Foto profil berhasil diperbarui!')
+      
+      // Close crop modal
+      setSelectedImage(null)
     } catch (error) {
-      console.error('Upload error:', error)
-      toast.error('Gagal upload foto. Terjadi kesalahan saat mengupload foto profil')
+      console.error('❌ Upload error:', error)
+      
+      // Show specific error message
+      const errorMessage = error instanceof Error 
+        ? error.message 
+        : 'Terjadi kesalahan tidak terduga'
+      
+      toast.error(`Gagal upload foto: ${errorMessage}`)
     } finally {
       setIsUploading(false)
     }
@@ -118,9 +185,44 @@ export function ProfileEdit({ onCancel, onSave }: ProfileEditProps) {
     fileInputRef.current?.click()
   }
 
-  const handleSave = () => {
-    toast.success("Profil berhasil diperbarui")
-    onSave()
+  const handleSave = async () => {
+    if (!user?.id) {
+      toast.error('Session expired. Silakan login kembali.')
+      return
+    }
+
+    try {
+      if (!supabaseBrowser) {
+        throw new Error('Supabase client not initialized')
+      }
+
+      // Update user data in database
+      const { error: updateError } = await supabaseBrowser
+        .from('users')
+        .update({
+          full_name: formData.fullName,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id)
+
+      if (updateError) {
+        console.error('Update error:', updateError)
+        throw updateError
+      }
+
+      // Update auth context to refresh everywhere
+      setUser({
+        ...user,
+        fullName: formData.fullName
+      })
+
+      toast.success("Profil berhasil diperbarui")
+      onSave()
+    } catch (error) {
+      console.error('Save error:', error)
+      const errorMessage = error instanceof Error ? error.message : 'Gagal menyimpan profil'
+      toast.error(`Gagal menyimpan: ${errorMessage}`)
+    }
   }
 
   return (
@@ -149,9 +251,11 @@ export function ProfileEdit({ onCancel, onSave }: ProfileEditProps) {
               title="Upload foto profil (Max 5MB)"
             >
               {isUploading ? (
-                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full" />
+                <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent" />
               ) : (
-                <Camera className="h-4 w-4" />
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 20 20" fill="currentColor">
+                  <path fillRule="evenodd" d="M4 5a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2v-8a2 2 0 00-2-2h-5.293A1 1 0 0015 4.707V4a1 1 0 00-1-1H9a1 1 0 00-1 1v2a2 2 0 01-2 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-8a2 2 0 012-2h8a2 2 0 012 2v2" clipRule="evenodd" />
+                </svg>
               )}
             </button>
             <input
@@ -168,11 +272,19 @@ export function ProfileEdit({ onCancel, onSave }: ProfileEditProps) {
           </p>
         </div>
 
-        {/* Form Fields */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6">
-          {/* Nama Panjang */}
+        {/* Informasi Akun Section */}
+        <div className="space-y-4">
+          <div className="flex items-center gap-2 pb-2 border-b">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" viewBox="0 0 20 20" fill="currentColor">
+              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+            </svg>
+            <h2 className="text-lg font-semibold text-gray-900">Informasi Akun</h2>
+          </div>
+          <p className="text-sm text-gray-600">Perbarui informasi akun Anda</p>
+          
+          {/* Nama */}
           <div className="space-y-2">
-            <Label htmlFor="fullName">Nama Panjang</Label>
+            <Label htmlFor="fullName">Nama</Label>
             <Input
               id="fullName"
               value={formData.fullName}
@@ -181,128 +293,105 @@ export function ProfileEdit({ onCancel, onSave }: ProfileEditProps) {
             />
           </div>
 
-          {/* Nama Panggilan */}
+          {/* Email (Read-only) */}
           <div className="space-y-2">
-            <Label htmlFor="displayName">Nama Panggilan</Label>
+            <Label htmlFor="email">Email</Label>
             <Input
-              id="displayName"
-              value={formData.displayName}
-              onChange={(e) => handleChange("displayName", e.target.value)}
-              placeholder="Masukkan nama panggilan..."
-            />
-          </div>
-
-          {/* Nama Pengguna */}
-          <div className="space-y-2">
-            <Label htmlFor="username">Nama Pengguna</Label>
-            <Input
-              id="username"
-              value={formData.username}
-              onChange={(e) => handleChange("username", e.target.value)}
-              placeholder="@username"
-            />
-          </div>
-
-          {/* Jenis Kelamin */}
-          <div className="space-y-2">
-            <Label htmlFor="gender">Jenis Kelamin</Label>
-            <Select value={formData.gender} onValueChange={(value) => handleChange("gender", value)}>
-              <SelectTrigger>
-                <SelectValue placeholder="Pilih jenis kelamin..." />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="Laki-laki">Laki-laki</SelectItem>
-                <SelectItem value="Perempuan">Perempuan</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Tanggal Lahir */}
-          <div className="space-y-2">
-            <Label htmlFor="birthDate">Tanggal Lahir</Label>
-            <Input
-              id="birthDate"
-              type="date"
-              value={formData.birthDate}
-              onChange={(e) => handleChange("birthDate", e.target.value)}
-            />
-          </div>
-
-          {/* Pekerjaan */}
-          <div className="space-y-2">
-            <Label htmlFor="occupation">Pekerjaan</Label>
-            <Input
-              id="occupation"
-              value={formData.occupation}
-              onChange={(e) => handleChange("occupation", e.target.value)}
-              placeholder="Masukkan Pekerjaan..."
-            />
-          </div>
-
-          {/* Nomor Telepon */}
-          <div className="space-y-2">
-            <Label htmlFor="phone">Nomor Telepon</Label>
-            <Input
-              id="phone"
-              value={formData.phone}
-              onChange={(e) => handleChange("phone", e.target.value)}
-              placeholder="+62 345 6789 1234"
-            />
-          </div>
-
-          {/* Provinsi */}
-          <div className="space-y-2">
-            <Label htmlFor="province">Provinsi</Label>
-            <Input
-              id="province"
-              value={formData.province}
-              onChange={(e) => handleChange("province", e.target.value)}
-              placeholder="Provinsi"
+              id="email"
+              value={formData.email}
               disabled
-            />
-          </div>
-
-          {/* Kota */}
-          <div className="space-y-2">
-            <Label htmlFor="city">Kota</Label>
-            <Input
-              id="city"
-              value={formData.city}
-              onChange={(e) => handleChange("city", e.target.value)}
-              placeholder="Kabupaten/Kota"
+              className="bg-gray-50"
             />
           </div>
         </div>
 
-        {/* Tentang Saya */}
-        <div className="mt-6 space-y-2">
-          <Label htmlFor="bio">Tentang Saya</Label>
-          <Textarea
-            id="bio"
-            value={formData.bio}
-            onChange={(e) => handleChange("bio", e.target.value)}
-            rows={4}
-            className="resize-none"
-          />
-          <p className="text-xs text-gray-500 text-right">
-            {formData.bio.length}/400 karakter
-          </p>
-        </div>
-
-        {/* Action Buttons */}
-        <div className="flex flex-col sm:flex-row justify-end gap-3 mt-6 sm:mt-8">
-          <Button
-            variant="outline"
-            onClick={onCancel}
-            className="border-gray-300 w-full sm:w-auto"
-          >
-            Batal
-          </Button>
+        {/* Simpan Informasi Akun Button */}
+        <div className="flex justify-end">
           <Button
             onClick={handleSave}
             className="bg-blue-600 hover:bg-blue-700 text-white w-full sm:w-auto"
           >
-            Simpan
+            Simpan Perubahan
+          </Button>
+        </div>
+      </div>
+
+      {/* Ubah Password Section */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 sm:p-6 lg:p-8 space-y-4">
+        <div className="flex items-center gap-2 pb-2 border-b">
+          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-700" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
+          </svg>
+          <h2 className="text-lg font-semibold text-gray-900">Ubah Password</h2>
+        </div>
+        
+        {/* Info: No verification needed */}
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+          <p className="text-sm text-blue-800">
+            <strong>ℹ️ Info:</strong> Karena Anda sudah login, langsung masukkan password baru yang diinginkan. Password lama akan otomatis terganti.
+          </p>
+        </div>
+
+        {/* Password Baru */}
+        <div className="space-y-2">
+          <Label htmlFor="newPassword">Password Baru</Label>
+          <div className="relative">
+            <Input
+              id="newPassword"
+              type={showNewPassword ? "text" : "password"}
+              value={passwordData.newPassword}
+              onChange={(e) => handlePasswordChange("newPassword", e.target.value)}
+              placeholder="Masukkan password baru (min. 6 karakter)"
+              className="pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowNewPassword(!showNewPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            >
+              {showNewPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Konfirmasi Password Baru */}
+        <div className="space-y-2">
+          <Label htmlFor="confirmPassword">Konfirmasi Password Baru</Label>
+          <div className="relative">
+            <Input
+              id="confirmPassword"
+              type={showConfirmPassword ? "text" : "password"}
+              value={passwordData.confirmPassword}
+              onChange={(e) => handlePasswordChange("confirmPassword", e.target.value)}
+              placeholder="Ulangi password baru"
+              className="pr-10"
+            />
+            <button
+              type="button"
+              onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+            >
+              {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+          </div>
+        </div>
+
+        {/* Ubah Password Button */}
+        <div className="flex justify-end pt-2">
+          <Button
+            onClick={handleChangePassword}
+            disabled={isChangingPassword || !passwordData.newPassword || !passwordData.confirmPassword}
+            className="bg-gray-600 hover:bg-gray-700 text-white w-full sm:w-auto disabled:opacity-50"
+          >
+            {isChangingPassword ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-2 border-white border-t-transparent mr-2" />
+                Mengubah...
+              </>
+            
+            ) : (
+              'Ubah Password'
+            )}
           </Button>
         </div>
       </div>

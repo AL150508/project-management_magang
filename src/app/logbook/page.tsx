@@ -162,12 +162,11 @@ export default function LogbookPage() {
               </div>
           
           <div className="flex flex-col gap-4 md:gap-6">
-                  {/* Tabel logbook siswa dengan filter nama siswa */}
+                  {/* Tabel logbook siswa - tampil SEMUA data seperti guru */}
                   <LogbookTable 
                     onEdit={(item: LogbookItem)=>{ setSelectedLogbook(item); setModalMode("edit"); setModalOpen(true)}}
                     onAdd={handleAdd}
                     refreshKey={refreshKey}
-                    studentNameFilter={role === "siswa" && user?.fullName ? user.fullName : undefined}
                   />
                 </div>
         </main>

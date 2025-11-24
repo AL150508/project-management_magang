@@ -84,10 +84,10 @@ export function UserProfileHeader({ role }: UserProfileHeaderProps) {
         </Button>
       </DropdownMenuTrigger>
       
-      <DropdownMenuContent align="end" className="w-64 p-2">
+      <DropdownMenuContent align="end" className="w-72 sm:w-80 p-0 bg-white shadow-lg">
         {/* User Info Header */}
-        <div className="flex items-center gap-3 px-2 py-3 mb-1">
-          <Avatar className="h-12 w-12">
+        <div className="flex items-center gap-3 px-4 py-4 mt-2 mb-1">
+          <Avatar className="h-12 w-12 ring-2 ring-blue-100">
             <AvatarImage src={avatarUrl} alt={user?.fullName || "User"} key={user?.avatar} />
             <AvatarFallback className="bg-blue-600 text-white font-semibold">
               {getInitials()}
@@ -103,43 +103,48 @@ export function UserProfileHeader({ role }: UserProfileHeaderProps) {
           </div>
         </div>
         
-        <DropdownMenuSeparator className="my-2" />
+        <DropdownMenuSeparator className="my-1" />
         
-        {/* Profile Menu Item */}
-        <DropdownMenuItem 
-          className="cursor-pointer px-3 py-2 rounded-md transition-colors hover:bg-slate-100 focus:bg-slate-100"
-          onSelect={handleNavigateToProfile}
-        >
-          <User className="h-5 w-5 mr-3 text-slate-600" />
-          <span className="text-sm font-medium text-slate-900">Profile</span>
-        </DropdownMenuItem>
+        {/* Menu Items Container */}
+        <div className="px-2 py-1 space-y-1">
+          {/* Profile Menu Item */}
+          <DropdownMenuItem 
+            className="cursor-pointer px-4 py-2.5 rounded-lg transition-colors hover:bg-slate-100 focus:bg-slate-100"
+            onSelect={handleNavigateToProfile}
+          >
+            <User className="h-5 w-5 mr-3 text-slate-600" />
+            <span className="text-sm font-medium text-slate-900">Profile</span>
+          </DropdownMenuItem>
+          
+          {/* Pengaturan Menu Item */}
+          <DropdownMenuItem 
+            className="cursor-pointer px-4 py-2.5 rounded-lg transition-colors hover:bg-slate-100 focus:bg-slate-100"
+            onSelect={handleNavigateToSettings}
+          >
+            <Settings className="h-5 w-5 mr-3 text-slate-600" />
+            <span className="text-sm font-medium text-slate-900">Pengaturan</span>
+          </DropdownMenuItem>
+        </div>
         
-        {/* Pengaturan Menu Item */}
-        <DropdownMenuItem 
-          className="cursor-pointer px-3 py-2 rounded-md transition-colors hover:bg-slate-100 focus:bg-slate-100"
-          onSelect={handleNavigateToSettings}
-        >
-          <Settings className="h-5 w-5 mr-3 text-slate-600" />
-          <span className="text-sm font-medium text-slate-900">Pengaturan</span>
-        </DropdownMenuItem>
-        
-        <DropdownMenuSeparator className="my-2" />
+        <DropdownMenuSeparator className="my-1" />
         
         {/* Notification Toggle */}
-        <div className="px-1 py-1">
+        <div className="px-2 py-2">
           <NotificationToggle />
         </div>
         
-        <DropdownMenuSeparator className="my-2" />
+        <DropdownMenuSeparator className="my-1" />
         
         {/* Keluar Menu Item */}
-        <DropdownMenuItem 
-          className="cursor-pointer px-3 py-2 rounded-md transition-colors hover:bg-red-50 focus:bg-red-50"
-          onSelect={handleLogout}
-        >
-          <LogOut className="h-5 w-5 mr-3 text-red-600" />
-          <span className="text-sm font-medium text-red-600">Keluar</span>
-        </DropdownMenuItem>
+        <div className="px-2 py-2 pb-3">
+          <DropdownMenuItem 
+            className="cursor-pointer px-4 py-2.5 rounded-lg transition-colors hover:bg-red-50 focus:bg-red-50"
+            onSelect={handleLogout}
+          >
+            <LogOut className="h-5 w-5 mr-3 text-red-600" />
+            <span className="text-sm font-medium text-red-600">Keluar</span>
+          </DropdownMenuItem>
+        </div>
       </DropdownMenuContent>
     </DropdownMenu>
   )

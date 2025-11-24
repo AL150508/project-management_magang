@@ -89,3 +89,21 @@
 .scrollbar-thin::-webkit-scrollbar-thumb:hover {
   background-color: rgba(156, 163, 175, 0.8);
 }
+
+/* Fix reCAPTCHA not clickable issue */
+iframe[src*="recaptcha"],
+iframe[src*="google.com/recaptcha"] {
+  z-index: 999999 !important;
+  pointer-events: auto !important;
+  position: relative !important;
+}
+
+.grecaptcha-badge {
+  z-index: 999999 !important;
+  pointer-events: auto !important;
+}
+
+/* Ensure reCAPTCHA modal overlay is clickable */
+body > div[style*="z-index"] {
+  pointer-events: auto !important;
+}

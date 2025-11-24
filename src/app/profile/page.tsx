@@ -56,7 +56,6 @@ export default function ProfilePage() {
               <ProfileSkeleton />
             ) : isEditing ? (
               <ProfileEdit
-                onCancel={() => setIsEditing(false)}
                 onSave={() => setIsEditing(false)}
               />
             ) : (
@@ -78,7 +77,6 @@ export default function ProfilePage() {
             <ProfileSkeleton />
           ) : isEditing ? (
             <ProfileEdit
-              onCancel={() => setIsEditing(false)}
               onSave={() => setIsEditing(false)}
             />
           ) : (

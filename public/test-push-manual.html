@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Test Push Notification - Manual Trigger</title>
+  <style>
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #2563eb;
+      margin-bottom: 10px;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+    }
+    button {
+      background: #2563eb;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      font-size: 16px;
+      cursor: pointer;
+      margin: 5px;
+      transition: background 0.2s;
+    }
+    button:hover {
+      background: #1d4ed8;
+    }
+    button:disabled {
+      background: #cbd5e1;
+      cursor: not-allowed;
+    }
+    .status {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 8px;
+      background: #f1f5f9;
+    }
+    .success {
+      background: #dcfce7;
+      color: #166534;
+    }
+    .error {
+      background: #fee2e2;
+      color: #991b1b;
+    }
+    .info {
+      background: #dbeafe;
+      color: #1e40af;
+    }
+    .section {
+      margin: 20px 0;
+      padding: 15px;
+      border: 1px solid #e5e7eb;
+      border-radius: 8px;
+    }
+    label {
+      display: block;
+      margin: 10px 0 5px;
+      font-weight: 500;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 8px;
+      border: 1px solid #d1d5db;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔔 Push Notification Test Tool</h1>
+    <p class="subtitle">Tool untuk testing Windows push notification secara manual</p>
+
+    <div class="section">
+      <h3>📋 Status</h3>
+      <div id="status" class="status">Checking...</div>
+    </div>
+
+    <div class="section">
+      <h3>🎯 Target Push</h3>
+      <label>
+        Send to:
+        <select id="targetRole">
+          <option value="guru">All Guru</option>
+          <option value="siswa">All Siswa</option>
+        </select>
+      </label>
+
+      <label>
+        Title:
+        <input type="text" id="title" value="📝 Test Push Notification" />
+      </label>
+
+      <label>
+        Message:
+        <textarea id="body">Ini adalah test push notification. Harusnya muncul di Windows notification center!</textarea>
+      </label>
+
+      <label>
+        Redirect URL:
+        <input type="text" id="url" value="/magang" />
+      </label>
+    </div>
+
+    <div style="text-align: center; margin-top: 20px;">
+      <button onclick="testPush()">🚀 Send Push Notification</button>
+      <button onclick="checkSubscription()">🔍 Check Subscription</button>
+    </div>
+
+    <div id="result" style="margin-top: 20px;"></div>
+  </div>
+
+  <script>
+    async function checkStatus() {
+      const statusDiv = document.getElementById('status');
+      
+      // Check notification permission
+      const permission = Notification.permission;
+      let html = `<strong>Notification Permission:</strong> ${permission}<br>`;
+      
+      // Check service worker
+      if ('serviceWorker' in navigator) {
+        const registration = await navigator.serviceWorker.getRegistration();
+        html += `<strong>Service Worker:</strong> ${registration ? '✅ Active' : '❌ Not registered'}<br>`;
+        
+        // Check subscription
+        if (registration) {
+          const subscription = await registration.pushManager.getSubscription();
+          html += `<strong>Push Subscription:</strong> ${subscription ? '✅ Subscribed' : '❌ Not subscribed'}`;
+        }
+      } else {
+        html += `<strong>Service Worker:</strong> ❌ Not supported`;
+      }
+      
+      statusDiv.innerHTML = html;
+      statusDiv.className = 'status ' + (permission === 'granted' ? 'success' : 'error');
+    }
+
+    async function checkSubscription() {
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = '<div class="status info">Checking subscription...</div>';
+      
+      try {
+        const registration = await navigator.serviceWorker.getRegistration();
+        if (!registration) {
+          throw new Error('Service worker not registered');
+        }
+        
+        const subscription = await registration.pushManager.getSubscription();
+        if (!subscription) {
+          throw new Error('Not subscribed to push');
+        }
+        
+        resultDiv.innerHTML = `
+          <div class="status success">
+            <strong>✅ Subscription Active</strong><br>
+            <pre style="font-size: 12px; overflow-x: auto;">${JSON.stringify(subscription, null, 2)}</pre>
+          </div>
+        `;
+      } catch (error) {
+        resultDiv.innerHTML = `
+          <div class="status error">
+            <strong>❌ Error:</strong> ${error.message}
+          </div>
+        `;
+      }
+    }
+
+    async function testPush() {
+      const resultDiv = document.getElementById('result');
+      resultDiv.innerHTML = '<div class="status info">Sending push notification...</div>';
+      
+      const targetRole = document.getElementById('targetRole').value;
+      const title = document.getElementById('title').value;
+      const body = document.getElementById('body').value;
+      const url = document.getElementById('url').value;
+      
+      try {
+        const response = await fetch('/api/send-push', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            targetRole,
+            title,
+            body,
+            icon: '/icons/icon-192x192.png',
+            url
+          })
+        });
+        
+        const result = await response.json();
+        
+        if (result.success) {
+          resultDiv.innerHTML = `
+            <div class="status success">
+              <strong>✅ Push Sent Successfully!</strong><br>
+              Sent to ${result.sent} user(s)<br><br>
+              <strong>What to expect:</strong><br>
+              - Windows notification will appear in bottom-right corner<br>
+              - Check Windows notification center (Win + A)<br>
+              - If browser is focused, notification might not show (minimize browser first)
+            </div>
+          `;
+        } else {
+          throw new Error(result.error || 'Unknown error');
+        }
+      } catch (error) {
+        resultDiv.innerHTML = `
+          <div class="status error">
+            <strong>❌ Failed to send push:</strong><br>
+            ${error.message}
+          </div>
+        `;
+      }
+    }
+    
+    // Check status on load
+    checkStatus();
+  </script>
+</body>
+</html>

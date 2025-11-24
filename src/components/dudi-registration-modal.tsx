@@ -16,8 +16,8 @@ import { Textarea } from "@/components/ui/textarea"
 import { IconBuilding } from "@tabler/icons-react"
 import { showSuccess, showError } from "@/lib & database connection/utils"
 import { supabaseBrowser } from "@/lib & database connection/supabase-browser"
-import { sendPushToRole } from "@/lib & database connection/send-push"
 import { DudiItem } from "./dudi-cards"
+import { createNotificationForAll } from "@/lib & database connection/create-notification"
 
 interface DudiRegistrationModalProps {
   open: boolean
@@ -198,12 +198,35 @@ export function DudiRegistrationModal({
       
       showSuccess(`Pendaftaran berhasil! Menunggu persetujuan guru untuk ${dudi.nama_perusahaan}`)
       
-      // Send push notification to all guru
-      sendPushToRole('guru', {
-        title: '🏢 Pendaftaran DUDI Baru',
-        body: `${dudi.nama_perusahaan} telah mendaftar sebagai DUDI`,
-        url: '/dudi'
-      }).catch(err => console.error('Push notification error:', err))
+      // Send push notification to ALL subscribed devices (Windows notification)
+      fetch('/api/test-push-all', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          title: '🏢 Pendaftaran DUDI Baru',
+          body: `${dudi.nama_perusahaan} telah mendaftar sebagai DUDI`,
+          icon: '/icons/icon-192x192.png',
+          url: '/dudi'
+        })
+      })
+      .then(res => res.json())
+      .then(data => console.log('✅ Push notification sent to', data.sent, 'device(s)'))
+      .catch(err => console.error('❌ Push notification error:', err))
+      
+      // Create in-app notification for ALL users (bell icon notification)
+      createNotificationForAll({
+        title: "Pendaftaran Magang Baru",
+        message: `${formData.nama} (${formData.kelas} ${formData.jurusan}) mendaftar magang di ${dudi.nama_perusahaan}`,
+        type: "magang",
+        senderName: formData.nama,
+        actionUrl: "/magang"
+      })
+      .then(result => {
+        if (result.success) {
+          console.log(`✅ In-app notification created for ${result.count} user(s) (all roles)`)
+        }
+      })
+      .catch(err => console.error('❌ In-app notification error:', err))
       
       // Close modal and call success callback
       onOpenChange(false)

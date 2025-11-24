@@ -3,7 +3,6 @@
 import * as React from "react"
 import { supabaseBrowser } from "@/lib & database connection/supabase-browser"
 import { useAuth } from "@/context/auth-context"
-import { sendPushToRole } from "@/lib & database connection/send-push"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -23,6 +22,8 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { toast } from "sonner"
+import { createNotificationForAll } from "@/lib & database connection/create-notification"
+import { showGuruAction } from "@/lib & database connection/utils"
 
 // Type untuk data siswa magang
 export type MagangItem = {
@@ -209,12 +210,14 @@ export function MagangModal({ open, onOpenChange, magang, onSuccess }: MagangMod
 
       if (magang) {
         // Mode edit: Update data yang sudah ada
+        // Catatan: Tabel `magang` saat ini tidak memiliki kolom `id` di database,
+        // sehingga kita gunakan kolom `Siswa` (nama siswa) sebagai key update.
         const { error, status, statusText } = await supabaseBrowser
           .from("magang")
           .update({
             ...dataToSubmit
           })
-          .eq("Siswa", magang.nama_siswa) // Update berdasarkan nama siswa
+          .eq("Siswa", magang.nama_siswa)
 
         if (error || (status && status >= 400)) {
           const composed = error?.message || statusText || "Unknown error"
@@ -222,7 +225,11 @@ export function MagangModal({ open, onOpenChange, magang, onSuccess }: MagangMod
           throw new Error([composed, details].filter(Boolean).join(" — "))
         }
 
-        toast.success("Data siswa magang berhasil diperbarui")
+        // Toast guru action (white bg, black text)
+        showGuruAction(
+          `Data magang ${formData.nama_siswa} berhasil diperbarui`,
+          "Update Data"
+        )
         
         // Send push notification if status changed to Aktif (approved)
         if (magang.status === 'Pending' && formData.status === 'Aktif') {
@@ -259,16 +266,43 @@ export function MagangModal({ open, onOpenChange, magang, onSuccess }: MagangMod
 
         toast.success("Data siswa magang berhasil ditambahkan")
         
-        // Send push notification to all guru/admin
-        sendPushToRole('guru', {
-          title: '📝 Pendaftaran Magang Baru',
-          body: `${formData.nama_siswa} telah mendaftar magang di ${formData.nama_dudi}`,
-          url: '/magang'
-        }).catch(err => console.error('Push notification error:', err))
+        // Send push notification to ALL subscribed devices (Windows notification)
+        fetch('/api/test-push-all', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            title: '📝 Pendaftaran Magang Baru',
+            body: `${formData.nama_siswa} telah mendaftar magang di ${formData.nama_dudi}`,
+            icon: '/icons/icon-192x192.png',
+            url: '/magang'
+          })
+        })
+        .then(res => res.json())
+        .then(data => console.log('✅ Push notification sent to', data.sent, 'device(s)'))
+        .catch(err => console.error('❌ Push notification error:', err))
+        
+        // Create in-app notification for ALL users (bell icon notification)
+        createNotificationForAll({
+          title: "Pendaftaran Magang Baru",
+          message: `${formData.nama_siswa} (${formData.kelas}) mendaftar magang di ${formData.nama_dudi}`,
+          type: "magang",
+          senderName: formData.nama_siswa,
+          senderId: user?.id,
+          actionUrl: "/magang"
+        })
+        .then(result => {
+          if (result.success) {
+            console.log(`✅ In-app notification created for ${result.count} user(s) (all roles) `)
+          }
+        })
+        .catch(err => console.error('❌ In-app notification error:', err))
       }
 
-      // Callback sukses dan tutup modal
+      // Trigger data refresh first
       onSuccess()
+      
+      // Small delay to allow Realtime to sync before closing modal
+      await new Promise(resolve => setTimeout(resolve, 300))
       onOpenChange(false)
     } catch (error) {
       console.error("Error saving magang data:", error)
@@ -305,7 +339,7 @@ export function MagangModal({ open, onOpenChange, magang, onSuccess }: MagangMod
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-y-auto mx-auto">
+      <DialogContent className="w-[95vw] max-w-[600px] max-h-[90vh] overflow-y-auto mx-auto bg-white">
         <DialogHeader>
           <DialogTitle>
             {magang ? "Edit Data Siswa Magang" : "Tambah Data Siswa Magang"}
@@ -355,7 +389,7 @@ export function MagangModal({ open, onOpenChange, magang, onSuccess }: MagangMod
                     <SelectTrigger>
                       <SelectValue placeholder={loadingSiswa ? "Memuat..." : "Pilih atau ketik nama siswa"} />
                     </SelectTrigger>
-                    <SelectContent>
+                    <SelectContent className="bg-white border border-gray-200 shadow-lg">
                       <SelectItem value="__manual__">
                         <span className="text-blue-600 font-medium">+ Ketik nama baru</span>
                       </SelectItem>
@@ -411,7 +445,7 @@ export function MagangModal({ open, onOpenChange, magang, onSuccess }: MagangMod
                 <SelectTrigger>
                   <SelectValue placeholder={loadingDudi ? "Memuat..." : "Pilih perusahaan"} />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white border border-gray-200 shadow-lg">
                   {dudiOptions.map((name) => (
                     <SelectItem key={name} value={name}>{name}</SelectItem>
                   ))}
@@ -447,10 +481,10 @@ export function MagangModal({ open, onOpenChange, magang, onSuccess }: MagangMod
             <div className="space-y-2">
               <Label htmlFor="status">Status</Label>
               <Select value={formData.status} onValueChange={(value) => handleInputChange("status", value)}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-white">
                   <SelectValue placeholder="Pilih status" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white border border-gray-200 shadow-lg">
                   <SelectItem value="Pending">Pending</SelectItem>
                   <SelectItem value="Aktif">Aktif</SelectItem>
                   <SelectItem value="Selesai">Selesai</SelectItem>

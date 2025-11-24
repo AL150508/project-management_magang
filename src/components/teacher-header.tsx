@@ -1,7 +1,7 @@
 "use client"
 
 // Header untuk tampilan Guru
-// Layout: Logo + Role switcher di bawah (vertikal) | Profile di kanan
+// Layout: Logo (kiri) | Role Switcher (kanan)
 
 import * as React from "react"
 import { IconChalkboard } from "@tabler/icons-react"
@@ -66,7 +66,7 @@ export function TeacherHeader({ userRole, onRoleChange }: TeacherHeaderProps) {
         </div>
       </div>
 
-      {/* Role Switcher - Desktop dan Mobile */}
+      {/* Role Switcher - Desktop dan Mobile (Kanan) */}
       <div className="flex items-center gap-1 bg-white rounded-lg p-1 shadow-sm border border-slate-200 flex-shrink-0">
         <Button
           variant="ghost"

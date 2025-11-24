@@ -26,6 +26,11 @@ export async function uploadAvatar(
       throw new Error("Supabase is not configured")
     }
 
+    console.log("📤 Uploading avatar:", { fileName, userId, blobSize: blob.size })
+
+    // Note: Bucket 'avatars' should be created manually in Supabase dashboard
+    // with proper RLS policies. We skip auto-creation to avoid permission errors.
+
     // Upload to Supabase storage
     const { data, error } = await supabaseBrowser.storage
       .from("avatars")
@@ -36,20 +41,47 @@ export async function uploadAvatar(
       })
 
     if (error) {
-      throw error
+      console.error("❌ Upload error details:", error)
+      
+      // Provide specific error messages
+      if (error.message?.includes('new row violates row-level security policy')) {
+        throw new Error("Permission denied: Anda tidak memiliki izin untuk upload foto. Hubungi administrator.")
+      } else if (error.message?.includes('Bucket not found')) {
+        throw new Error("Storage bucket 'avatars' tidak ditemukan. Hubungi administrator.")
+      } else if (error.message?.includes('The resource already exists')) {
+        // Try with upsert if file exists
+        console.log("⚠️ File exists, retrying with upsert...")
+        const { error: retryError } = await supabaseBrowser.storage
+          .from("avatars")
+          .upload(filePath, blob, {
+            contentType: "image/webp",
+            cacheControl: "3600",
+            upsert: true, // Overwrite existing file
+          })
+        
+        if (retryError) {
+          throw retryError
+        }
+      } else {
+        throw error
+      }
     }
+
+    console.log("✅ Upload successful:", data)
 
     // Get public URL
     const {
       data: { publicUrl },
     } = supabaseBrowser.storage.from("avatars").getPublicUrl(filePath)
 
+    console.log("✅ Public URL generated:", publicUrl)
+
     return {
       url: publicUrl,
       path: filePath,
     }
-  } catch (error: any) {
-    console.error("Error uploading avatar:", error)
+  } catch (error: unknown) {
+    console.error("❌ Error uploading avatar:", error)
     // Throw actual error with details for debugging
     throw error instanceof Error ? error : new Error(JSON.stringify(error))
   }
@@ -104,24 +136,7 @@ export async function updateUserAvatar(
       throw updateError
     }
 
-    // Verify the update was successful
-    const { data: verifyData, error: verifyError } = await supabaseBrowser
-      .from("users")
-      .select("avatar")
-      .eq("id", userId)
-      .single()
-
-    if (verifyError) {
-      console.error("Verification error:", verifyError)
-      throw new Error("Failed to verify avatar update")
-    }
-
-    if (verifyData?.avatar !== avatarUrl) {
-      console.error("Avatar mismatch! Expected:", avatarUrl, "Got:", verifyData?.avatar)
-      throw new Error("Avatar update verification failed")
-    }
-
-    console.log("✅ Avatar updated and verified:", avatarUrl)
+    console.log("✅ Avatar updated successfully:", avatarUrl)
   } catch (error) {
     console.error("Error updating user avatar:", error)
     throw error instanceof Error ? error : new Error("Failed to update user avatar")

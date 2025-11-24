@@ -36,12 +36,9 @@ export default function Page() {
 
   // Fungsi untuk mengganti role user (guru/siswa)
   const handleRoleChange = (newRole: "siswa" | "guru") => {
-    console.log("Role changing to:", newRole) // Bisa dihapus jika tidak perlu log
+    console.log("Role changing to:", newRole)
     setRole(newRole)
-    // Refresh halaman setelah role change untuk memastikan semua komponen ter-update
-    setTimeout(() => {
-      window.location.reload()
-    }, 200)
+    // No need for reload - React state management handles the update
   }
 
   // Fungsi untuk mengganti item sidebar yang aktif
@@ -91,8 +88,8 @@ export default function Page() {
                   <SectionCards />
               <div className="grid gap-4 md:gap-6 md:grid-cols-3 items-start">
                 <div className="md:col-span-2 flex flex-col gap-4 md:gap-6">
-                        <SectionLatestMagang compact minHeightClass="min-h-[380px]" />
-                        <SectionLatestLogbook minHeightClass="min-h-[380px]" />
+                        <SectionLatestMagang />
+                        <SectionLatestLogbook />
                       </div>
                 <div className="flex flex-col gap-4 md:gap-6">
                         <SectionProgressOverview />

@@ -167,8 +167,11 @@ export function DudiModal({ open, onOpenChange, dudi, onSuccess }: DudiModalProp
         showSuccess("Data DUDI berhasil ditambahkan dengan koordinat lokasi")
       }
 
-      // Callback sukses dan tutup modal
+      // Trigger data refresh first
       onSuccess()
+      
+      // Small delay to allow Realtime to sync before closing modal
+      await new Promise(resolve => setTimeout(resolve, 300))
       onOpenChange(false)
     } catch (error) {
       console.error("Error saving DUDI:", error)
@@ -221,13 +224,13 @@ export function DudiModal({ open, onOpenChange, dudi, onSuccess }: DudiModalProp
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       {/* Overlay untuk menutup modal saat klik di luar */}
-      <div 
-        className="fixed inset-0 bg-black/80" 
+      <div
+        className="fixed inset-0 bg-black/70"
         onClick={() => onOpenChange(false)}
       />
-      
+
       {/* Modal Content */}
-      <div className="relative bg-white rounded-lg shadow-lg w-full max-w-2xl mx-4 p-6 max-h-[90vh] overflow-y-auto">
+      <div className="relative w-full max-w-2xl mx-4 max-h-[90vh] overflow-y-auto rounded-2xl bg-white border border-slate-200 shadow-xl">
         {/* Header modal dengan icon dan judul */}
         <div className="flex items-center gap-2 mb-4">
           <IconBuilding className="size-5 text-blue-600" />

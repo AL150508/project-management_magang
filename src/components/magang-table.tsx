@@ -54,11 +54,27 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
   const [pageSize, setPageSize] = React.useState(5)
   const [currentPage, setCurrentPage] = React.useState(1)
   const [statusFilter, setStatusFilter] = React.useState("Semua")
+  const loadingTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
 
   const loadData = React.useCallback(async () => {
+    // Clear previous timeout
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current)
+    }
+
     setLoading(true)
+    setError(null)
+    
+    // Set timeout protection - max 15 seconds
+    loadingTimeoutRef.current = setTimeout(() => {
+      console.error("⏱️ Loading timeout - forcing error state")
+      setLoading(false)
+      setError("Waktu tunggu habis. Silakan coba lagi atau periksa koneksi internet.")
+      showError("Gagal memuat data: timeout")
+    }, 15000)
+
     try {
-      console.log("Loading Magang data...")
+      console.log("🔄 Loading Magang data...")
       
       // Check if Supabase is properly configured
       if (!supabaseBrowser) {
@@ -66,23 +82,33 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
       }
 
       type MagangRowDB = {
+        id?: string | number
         Siswa?: string
+        nama_siswa?: string
+        nis?: string
         NIS?: string
+        kelas?: string
         Kelas?: string
+        jurusan?: string
         Jurusan?: string
         DUDI?: string
+        Dudi?: string
         nama_dudi?: string
         nama_perusahaan?: string
+        periode_mulai?: string
         Mulai?: string
+        periode_selesai?: string
         Selesai?: string
+        status?: string
         Status?: string
         nilai?: number
+        created_at?: string
       }
       let magangData: MagangRowDB[] | null = null
       try {
         const { data, error } = await supabaseBrowser!
           .from("magang")
-          .select("id,Siswa,nama_siswa,nis,kelas,jurusan,nama_dudi,periode_mulai,periode_selesai,status,nilai,created_at")
+          .select("id,Siswa,nama_siswa,nis,kelas,jurusan,nama_dudi,periode_mulai,periode_selesai,status,Status,nilai,created_at")
           .order("created_at", { ascending: false })
         if (error) throw error
         magangData = (data as unknown as MagangRowDB[]) || null
@@ -98,24 +124,18 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
         magangData = (data as unknown as MagangRowDB[]) || null
       }
 
-      console.log("Magang data loaded successfully:", magangData)
+      console.log("✅ Magang data loaded successfully:", magangData?.length || 0, "items")
+      
+      // Clear timeout on success
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current)
+      }
       
       // Map data dari struktur tabel `magang` ke struktur MagangItem
-      type MagangRow = {
-        Siswa?: string
-        NIS?: string
-        Kelas?: string
-        Jurusan?: string
-        DUDI?: string
-        nama_dudi?: string
-        nama_perusahaan?: string
-        Mulai?: string
-        Selesai?: string
-        Status?: string
-        nilai?: number
-      }
+      type MagangRow = MagangRowDB
       const mapped: MagangItem[] = (magangData as MagangRow[] | null || []).map((row) => {
-        const rawStatus = typeof row["status"] === "string" ? row["status"] : undefined
+        // Ambil status dari kolom "status" (lowercase) atau "Status" (uppercase)
+        const rawStatus = row["status"] ?? row["Status"]
         const normalizedStatus =
           rawStatus === "Aktif" || rawStatus === "Selesai" || rawStatus === "Pending"
             ? rawStatus
@@ -140,7 +160,12 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
       setError(null) // Clear any previous errors
       
     } catch (error) {
-      console.error("Error loading Magang data:", error)
+      console.error("❌ Error loading Magang data:", error)
+      
+      // Clear timeout on error
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current)
+      }
       
       // Better error message for user
       let errorMessage = "Gagal memuat data Magang"
@@ -175,21 +200,35 @@ export function MagangTable({ onEdit, onAdd, onNilai, refreshKey }: MagangTableP
   // Realtime: otomatis reload ketika ada perubahan di tabel `magang`
   React.useEffect(() => {
     if (!supabaseBrowser) return
-    const channel = supabaseBrowser!
-      .channel("realtime-magang")
+
+    console.log("🔴 Setting up realtime subscription for Magang table")
+
+    const channel = supabaseBrowser
+      .channel(`realtime-magang-${Date.now()}`) // Unique channel name
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "magang" },
-        () => {
+        (payload) => {
+          console.log("🔔 Magang data changed:", payload.eventType)
           loadData()
         }
       )
-      .subscribe()
+      .subscribe((status) => {
+        console.log("📡 Realtime subscription status:", status)
+      })
 
     return () => {
-      supabaseBrowser!.removeChannel(channel)
+      console.log("🔴 Cleaning up realtime subscription for Magang")
+      if (supabaseBrowser) {
+        supabaseBrowser.removeChannel(channel)
+      }
+      // Clear timeout on cleanup
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current)
+      }
     }
-  }, [loadData])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Empty dependency - only setup once
 
   const filteredData = React.useMemo(() => {
     let filtered = data

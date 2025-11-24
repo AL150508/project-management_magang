@@ -44,7 +44,7 @@ export type MagangGuruItem = {
   pengalaman?: string
   nama_dudi: string
   bidang_usaha?: string
-  status: "Pending" | "Disetujui" | "Ditolak"
+  status: "Pending" | "Aktif" | "Selesai" | "Disetujui" | "Ditolak"
   catatan_guru?: string
   tanggal_pendaftaran: string
   tanggal_persetujuan?: string
@@ -66,11 +66,34 @@ export function MagangGuruTable({ onRefresh }: MagangGuruTableProps) {
   const [catatanGuru, setCatatanGuru] = React.useState("")
   const [actionLoading, setActionLoading] = React.useState(false)
   const [showEditModal, setShowEditModal] = React.useState(false)
-  const [editStatus, setEditStatus] = React.useState<"Pending" | "Disetujui" | "Ditolak">("Pending")
+  const [editStatus, setEditStatus] = React.useState<"Pending" | "Aktif" | "Selesai" | "Disetujui" | "Ditolak">("Pending")
+  const loadingTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
 
   const loadData = React.useCallback(async () => {
+    // Clear previous timeout
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current)
+    }
+
+    setLoading(true)
+    
+    // Set timeout protection - max 15 seconds
+    loadingTimeoutRef.current = setTimeout(() => {
+      console.error("⏱️ Loading timeout - forcing error state")
+      setLoading(false)
+      toast.error("Gagal memuat data: timeout")
+    }, 15000)
+
     try {
-      if (!supabaseBrowser) return
+      console.log("🔄 Loading Magang Guru data...")
+      
+      if (!supabaseBrowser) {
+        if (loadingTimeoutRef.current) {
+          clearTimeout(loadingTimeoutRef.current)
+        }
+        setLoading(false)
+        return
+      }
 
       const { data: magangData, error } = await supabaseBrowser
         .from("magang_guru")
@@ -78,7 +101,11 @@ export function MagangGuruTable({ onRefresh }: MagangGuruTableProps) {
         .order("tanggal_pendaftaran", { ascending: false })
 
       if (error) {
-        console.error("Error loading magang guru data:", error)
+        console.error("❌ Error loading magang guru data:", error)
+        if (loadingTimeoutRef.current) {
+          clearTimeout(loadingTimeoutRef.current)
+        }
+        toast.error("Gagal memuat data magang guru")
         return
       }
 
@@ -92,17 +119,31 @@ export function MagangGuruTable({ onRefresh }: MagangGuruTableProps) {
         pengalaman: item.pengalaman as string,
         nama_dudi: item.nama_dudi as string,
         bidang_usaha: item.bidang_usaha as string,
-        status: (item.status === "Disetujui" || item.status === "Ditolak" || item.status === "Pending") 
-          ? item.status as "Disetujui" | "Ditolak" | "Pending"
+        status: (item.status === "Pending" || item.status === "Aktif" || item.status === "Selesai" || item.status === "Disetujui" || item.status === "Ditolak") 
+          ? item.status as "Pending" | "Aktif" | "Selesai" | "Disetujui" | "Ditolak"
           : "Pending",
         catatan_guru: item.catatan_guru as string,
         tanggal_pendaftaran: new Date(item.tanggal_pendaftaran as string).toLocaleDateString("id-ID"),
         tanggal_persetujuan: item.tanggal_persetujuan ? new Date(item.tanggal_persetujuan as string).toLocaleDateString("id-ID") : undefined
       })) || []
 
+      console.log("✅ Magang Guru data loaded successfully:", formattedData.length, "items")
+      
+      // Clear timeout on success
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current)
+      }
+      
       setData(formattedData)
     } catch (err) {
-      console.error("Error loading data:", err)
+      console.error("❌ Error loading data:", err)
+      
+      // Clear timeout on error
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current)
+      }
+      
+      toast.error("Gagal memuat data magang guru")
     } finally {
       setLoading(false)
     }
@@ -123,13 +164,17 @@ export function MagangGuruTable({ onRefresh }: MagangGuruTableProps) {
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "Pending":
-        return <Badge variant="outline" className="border-yellow-500 text-yellow-700">Menunggu</Badge>
+        return <Badge variant="outline" className="border-yellow-500 text-yellow-700 bg-yellow-50">Pending</Badge>
+      case "Aktif":
+        return <Badge variant="outline" className="border-green-500 text-green-700 bg-green-50">Aktif</Badge>
+      case "Selesai":
+        return <Badge variant="outline" className="border-blue-500 text-blue-700 bg-blue-50">Selesai</Badge>
       case "Disetujui":
-        return <Badge variant="outline" className="border-green-500 text-green-700">Disetujui</Badge>
+        return <Badge variant="outline" className="border-green-500 text-green-700 bg-green-50">Disetujui</Badge>
       case "Ditolak":
-        return <Badge variant="outline" className="border-red-500 text-red-700">Ditolak</Badge>
+        return <Badge variant="outline" className="border-red-500 text-red-700 bg-red-50">Ditolak</Badge>
       default:
-        return <Badge variant="outline">{status}</Badge>
+        return <Badge variant="outline" className="bg-gray-50">{status}</Badge>
     }
   }
 
@@ -304,7 +349,7 @@ export function MagangGuruTable({ onRefresh }: MagangGuruTableProps) {
                 <SelectTrigger>
                   <SelectValue placeholder="Filter status" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white">
                   <SelectItem value="all">Semua Status</SelectItem>
                   <SelectItem value="Pending">Menunggu</SelectItem>
                   <SelectItem value="Disetujui">Disetujui</SelectItem>
@@ -412,7 +457,7 @@ export function MagangGuruTable({ onRefresh }: MagangGuruTableProps) {
 
       {/* Detail Modal */}
       <Dialog open={showDetailModal} onOpenChange={setShowDetailModal}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl bg-white">
           <DialogHeader>
             <DialogTitle>Detail Pendaftaran</DialogTitle>
             <DialogDescription>
@@ -469,7 +514,7 @@ export function MagangGuruTable({ onRefresh }: MagangGuruTableProps) {
 
       {/* Action Modal */}
       <Dialog open={showActionModal} onOpenChange={setShowActionModal}>
-        <DialogContent>
+        <DialogContent className="bg-white">
           <DialogHeader>
             <DialogTitle>
               {actionType === "approve" ? "Setujui Pendaftaran" : "Tolak Pendaftaran"}
@@ -517,7 +562,7 @@ export function MagangGuruTable({ onRefresh }: MagangGuruTableProps) {
 
       {/* Edit Status Modal */}
       <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
-        <DialogContent>
+        <DialogContent className="bg-white">
           <DialogHeader>
             <DialogTitle>Edit Status Pendaftaran</DialogTitle>
             <DialogDescription>Ubah status tanpa memindahkan data ke tabel magang</DialogDescription>
@@ -533,10 +578,10 @@ export function MagangGuruTable({ onRefresh }: MagangGuruTableProps) {
                 <SelectTrigger id="statusEdit">
                   <SelectValue placeholder="Pilih status" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="bg-white border border-gray-200 shadow-lg">
                   <SelectItem value="Pending">Pending</SelectItem>
-                  <SelectItem value="Disetujui">Disetujui</SelectItem>
-                  <SelectItem value="Ditolak">Ditolak</SelectItem>
+                  <SelectItem value="Aktif">Aktif</SelectItem>
+                  <SelectItem value="Selesai">Selesai</SelectItem>
                 </SelectContent>
               </Select>
             </div>

@@ -48,6 +48,7 @@ export type LogbookItem = {
   catatan_guru?: string
   catatan_dudi?: string
   foto?: string
+  user_id?: string // UUID user yang membuat logbook
   created_at?: string
   updated_at?: string
 }
@@ -57,10 +58,11 @@ type LogbookTableProps = {
   onView?: (item: LogbookItem) => void
   onAdd?: () => void
   refreshKey?: number
-  studentNameFilter?: string // jika diisi, tampilkan hanya milik siswa ini
+  studentUserId?: string // filter by user_id (lebih akurat)
+  studentNameFilter?: string // fallback filter by nama (untuk backward compatibility)
 }
 
-export function LogbookTable({ onEdit, onView, onAdd, refreshKey, studentNameFilter }: LogbookTableProps) {
+export function LogbookTable({ onEdit, onView, onAdd, refreshKey, studentUserId, studentNameFilter }: LogbookTableProps) {
   const [data, setData] = React.useState<LogbookItem[]>([])
   const [loading, setLoading] = React.useState(true)
   const [error, setError] = React.useState<string | null>(null)
@@ -68,14 +70,33 @@ export function LogbookTable({ onEdit, onView, onAdd, refreshKey, studentNameFil
   const [pageSize] = React.useState(5)
   const [currentPage, setCurrentPage] = React.useState(1)
   const [statusFilter, setStatusFilter] = React.useState("Semua")
+  const loadingTimeoutRef = React.useRef<NodeJS.Timeout | null>(null)
 
   const loadData = React.useCallback(async () => {
+    // Clear previous timeout
+    if (loadingTimeoutRef.current) {
+      clearTimeout(loadingTimeoutRef.current)
+    }
+
     setLoading(true)
+    setError(null)
+    
+    // Set timeout protection - max 15 seconds
+    loadingTimeoutRef.current = setTimeout(() => {
+      console.error("⏱️ Loading timeout - forcing error state")
+      setLoading(false)
+      setError("Waktu tunggu habis. Silakan coba lagi atau periksa koneksi internet.")
+      toast.error("Gagal memuat data: timeout")
+    }, 15000)
+
     try {
-      console.log("Loading Logbook data...")
+      console.log("🔄 Loading Logbook data...")
       
       if (!supabaseBrowser) {
-        console.warn("Supabase client not available, using empty data")
+        console.warn("⚠️ Supabase client not available, using empty data")
+        if (loadingTimeoutRef.current) {
+          clearTimeout(loadingTimeoutRef.current)
+        }
         setData([])
         setError(null)
         return
@@ -88,14 +109,20 @@ export function LogbookTable({ onEdit, onView, onAdd, refreshKey, studentNameFil
         .order("created_at", { ascending: false })
 
       if (error) {
-        console.error("Error loading logbook data:", error)
+        console.error("❌ Error loading logbook data:", error)
+        if (loadingTimeoutRef.current) {
+          clearTimeout(loadingTimeoutRef.current)
+        }
         setError(`Database error: ${error.message || 'Unknown error'}`)
         setData([])
         return
       }
 
       if (!logbookData || logbookData.length === 0) {
-        console.log("No logbook data found")
+        console.log("✅ No logbook data found")
+        if (loadingTimeoutRef.current) {
+          clearTimeout(loadingTimeoutRef.current)
+        }
         setData([])
         setLoading(false)
         return
@@ -110,24 +137,53 @@ export function LogbookTable({ onEdit, onView, onAdd, refreshKey, studentNameFil
         status: log.status || 'menunggu',
         foto: log.foto || null,
         catatan_guru: log.catatan_guru || null,
-        catatan_dudi: log.catatan_dudi || null
+        catatan_dudi: log.catatan_dudi || null,
+        user_id: log.user_id || null
       }))
 
       const totalFetched = formattedData.length
       console.log("Logbook fetched:", { totalFetched, studentNameFilter })
 
       let filteredData = formattedData
-      if (studentNameFilter && typeof studentNameFilter === 'string') {
-        const filterTrim = studentNameFilter.trim().toLowerCase()
-        const exactMatches = formattedData.filter(item => (item.nama_siswa || '').trim().toLowerCase() === filterTrim)
-        const includesMatches = exactMatches.length > 0 ? exactMatches : formattedData.filter(item => (item.nama_siswa || '').toLowerCase().includes(filterTrim))
-        filteredData = includesMatches
-        console.log("Logbook after filter:", { filtered: filteredData.length })
+      
+      // Priority 1: Filter by user_id if available (most accurate)
+      if (studentUserId && typeof studentUserId === 'string') {
+        console.log('[Logbook Filter] Filtering by user_id:', studentUserId)
+        
+        // Filter by user_id dari database
+        filteredData = formattedData.filter(item => {
+          // Cek jika logbook punya user_id field
+          return item.user_id && item.user_id === studentUserId
+        })
+        
+        console.log('[Logbook Filter] Filtered by user_id:', filteredData.length)
+        
+        // Jika ada user_id tapi tidak ada hasil, fallback ke nama
+        if (filteredData.length === 0 && studentNameFilter) {
+          console.log('[Logbook Filter] No results with user_id, falling back to nama filter')
+        } else if (filteredData.length > 0) {
+          // Jika user_id filter sukses, skip nama filter
+          console.log('[Logbook Filter] ✅ Successfully filtered by user_id')
+        }
       }
-
-      if (studentNameFilter && filteredData.length === 0 && formattedData.length > 0) {
-        console.warn("Logbook filter returned 0 items, falling back to all items to avoid empty table")
-        filteredData = formattedData
+      
+      // Priority 2: Filter by nama if user_id not available or no results
+      if ((!studentUserId || filteredData.length === 0) && studentNameFilter && typeof studentNameFilter === 'string') {
+        const filterTrim = studentNameFilter.trim().toLowerCase()
+        console.log('[Logbook Filter] Filtering by nama:', filterTrim)
+        console.log('[Logbook Filter] Available names:', formattedData.map(item => item.nama_siswa.toLowerCase()))
+        
+        // Try exact match first
+        const exactMatches = formattedData.filter(item => (item.nama_siswa || '').trim().toLowerCase() === filterTrim)
+        
+        // If no exact match, try includes
+        const includesMatches = formattedData.filter(item => (item.nama_siswa || '').toLowerCase().includes(filterTrim))
+        
+        filteredData = exactMatches.length > 0 ? exactMatches : includesMatches
+        
+        console.log('[Logbook Filter] Exact nama matches:', exactMatches.length)
+        console.log('[Logbook Filter] Includes nama matches:', includesMatches.length)
+        console.log('[Logbook Filter] Final filtered by nama:', filteredData.length)
       }
 
       const mappedData = filteredData.map(item => ({
@@ -138,20 +194,66 @@ export function LogbookTable({ onEdit, onView, onAdd, refreshKey, studentNameFil
                item.status === 'ditolak' ? 'Ditolak' : item.status
       }))
 
+      console.log("✅ Logbook data loaded successfully:", mappedData.length, "items")
+      
+      // Clear timeout on success
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current)
+      }
+      
       setData(mappedData)
       setError(null)
     } catch (err) {
-      console.error("Error loading logbook data:", err)
+      console.error("❌ Error loading logbook data:", err)
+      
+      // Clear timeout on error
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current)
+      }
+      
       setError(err instanceof Error ? err.message : "Unknown error")
       setData([])
     } finally {
       setLoading(false)
     }
-  }, [studentNameFilter])
+  }, [studentUserId, studentNameFilter])
 
   React.useEffect(() => {
     loadData()
   }, [loadData, refreshKey])
+
+  // Realtime: otomatis reload ketika ada perubahan di tabel `logbook`
+  React.useEffect(() => {
+    if (!supabaseBrowser) return
+
+    console.log("🔴 Setting up realtime subscription for Logbook table")
+
+    const channel = supabaseBrowser
+      .channel(`realtime-logbook-${Date.now()}`) // Unique channel name
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "logbook" },
+        (payload) => {
+          console.log("🔔 Logbook data changed:", payload.eventType)
+          loadData()
+        }
+      )
+      .subscribe((status) => {
+        console.log("📡 Realtime subscription status:", status)
+      })
+
+    return () => {
+      console.log("🔴 Cleaning up realtime subscription for Logbook")
+      if (supabaseBrowser) {
+        supabaseBrowser.removeChannel(channel)
+      }
+      // Clear timeout on cleanup
+      if (loadingTimeoutRef.current) {
+        clearTimeout(loadingTimeoutRef.current)
+      }
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []) // Empty dependency - only setup once
 
   const handleDelete = async (id: string | number) => {
     // Tampilkan toast konfirmasi dengan action buttons

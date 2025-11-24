@@ -3,6 +3,7 @@
 import * as React from "react"
 import Cropper from "react-easy-crop"
 import { Button } from "@/components/ui/button"
+import { Checkbox } from "@/components/ui/checkbox"
 import {
   Dialog,
   DialogContent,
@@ -29,6 +30,7 @@ export function AvatarCropModal({
   const [zoom, setZoom] = React.useState(1)
   const [croppedAreaPixels, setCroppedAreaPixels] = React.useState<any>(null)
   const [isProcessing, setIsProcessing] = React.useState(false)
+  const [compress, setCompress] = React.useState(true)
 
   const onCropChange = (location: { x: number; y: number }) => {
     setCrop(location)
@@ -55,7 +57,8 @@ export function AvatarCropModal({
 
   const getCroppedImg = async (
     imageSrc: string,
-    pixelCrop: any
+    pixelCrop: any,
+    quality: number
   ): Promise<Blob> => {
     const image = await createImage(imageSrc)
     const canvas = document.createElement("canvas")
@@ -92,7 +95,7 @@ export function AvatarCropModal({
           resolve(blob)
         },
         "image/webp",
-        0.9
+        quality
       )
     })
   }
@@ -100,7 +103,8 @@ export function AvatarCropModal({
   const handleComplete = async () => {
     try {
       setIsProcessing(true)
-      const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels)
+      const quality = compress ? 0.7 : 0.95
+      const croppedImage = await getCroppedImg(imageSrc, croppedAreaPixels, quality)
       onCropComplete(croppedImage)
       onClose()
     } catch (error) {
@@ -144,6 +148,26 @@ export function AvatarCropModal({
                 className="flex-1"
               />
               <ZoomIn className="h-5 w-5 text-gray-500 flex-shrink-0" />
+            </div>
+
+            {/* Compression Option */}
+            <div className="flex items-center justify-between text-xs text-gray-600">
+              <div className="flex items-center gap-2">
+                <Checkbox
+                  id="avatar-compress"
+                  checked={compress}
+                  onCheckedChange={(v) => setCompress(!!v)}
+                />
+                <label
+                  htmlFor="avatar-compress"
+                  className="cursor-pointer select-none"
+                >
+                  Kompresi gambar avatar (hemat kuota)
+                </label>
+              </div>
+              <span className="hidden sm:inline text-[11px] text-gray-400">
+                Nonaktifkan untuk kualitas maksimal (file lebih besar)
+              </span>
             </div>
 
             {/* Action Buttons */}

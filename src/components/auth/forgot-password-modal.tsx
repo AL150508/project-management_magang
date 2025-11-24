@@ -8,6 +8,7 @@ import { Label } from "@/components/ui/label"
 import { Loader2, ArrowLeft } from "lucide-react"
 import { showSuccess, showError, showWarning } from "@/lib & database connection/utils"
 import { RecaptchaWrapper, RecaptchaRef } from "@/components/recaptcha/recaptcha-wrapper"
+import { supabaseBrowser } from "@/lib & database connection/supabase-browser"
 
 interface ForgotPasswordModalProps {
   isOpen: boolean
@@ -31,18 +32,34 @@ export function ForgotPasswordModal({ isOpen, onClose, onBackToLogin }: ForgotPa
     
     setIsLoading(true)
     try {
-      // TODO: Implementasi actual forgot password dengan Supabase
-      // Untuk sekarang, simulasi
-      console.log("Reset password for:", email, "reCAPTCHA:", recaptchaToken)
+      console.log("🔐 Sending password reset email to:", email)
       
-      // Simulasi delay API
-      await new Promise(resolve => setTimeout(resolve, 2000))
+      if (!supabaseBrowser) {
+        throw new Error("Supabase client not initialized")
+      }
+
+      // Supabase akan mengirim email dengan link reset password
+      const { error } = await supabaseBrowser.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/auth/reset-password`,
+      })
+
+      if (error) {
+        throw error
+      }
       
-      showSuccess("Link reset password telah dikirim ke email Anda!")
+      console.log("✅ Reset password email sent successfully")
+      showSuccess("Link reset password telah dikirim ke email Anda! Silakan cek inbox atau spam folder.")
+      
+      // Clear form and close modal
+      setEmail("")
+      recaptchaRef.current?.reset()
+      setRecaptchaToken(null)
       onClose()
     } catch (error) {
-      showError("Gagal mengirim link reset password. Silakan coba lagi.")
-      console.error("Forgot password error:", error)
+      console.error("❌ Forgot password error:", error)
+      const errorMessage = error instanceof Error ? error.message : "Terjadi kesalahan"
+      showError(`Gagal mengirim link reset password: ${errorMessage}`)
+      
       // Reset reCAPTCHA on error
       recaptchaRef.current?.reset()
       setRecaptchaToken(null)

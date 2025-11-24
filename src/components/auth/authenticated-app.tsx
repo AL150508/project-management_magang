@@ -7,7 +7,7 @@ import { StudentHeader } from "@/components/student-header"
 import { StudentSidebar } from "@/components/student-sidebar"
 import { StudentDashboard } from "@/components/student-dashboard"
 import { SectionCards } from "@/components/section-cards"
-import { SectionLatestMagang, latestMagangDummy, SectionLatestLogbook, latestLogbookDummy, SectionDudiAktif } from "@/components/dashboard/sections"
+import { SectionLatestMagang, SectionLatestLogbook, SectionDudiAktif } from "@/components/dashboard/sections"
 import { SectionProgressOverview } from "@/components/section-progress-overview"
 import { TeacherHeader } from "@/components/teacher-header"
 import { TeacherSidebar } from "@/components/teacher-sidebar"
@@ -123,18 +123,12 @@ export function AuthenticatedApp() {
             <SectionCards />
             <div className="grid gap-4 md:gap-6 md:grid-cols-3 items-start">
               <div className="md:col-span-2 flex flex-col gap-4 md:gap-6">
-                <SectionLatestMagang items={latestMagangDummy} compact minHeightClass="min-h-[380px]" />
-                <SectionLatestLogbook items={latestLogbookDummy} minHeightClass="min-h-[380px]" />
+                <SectionLatestMagang />
+                <SectionLatestLogbook />
               </div>
               <div className="flex flex-col gap-4 md:gap-6">
-                <SectionProgressOverview activeInternPercent={80} logbookTodayPercent={71} />
-                <SectionDudiAktif
-                  items={[
-                    { id: 1, name: "PT. Teknologi Nusantara", industry: "Teknologi Informasi", address: "Jl. HR Muhammad No. 123, Surabaya", phone: "031-5551234", count: 8 },
-                    { id: 2, name: "CV. Digital Kreativa", industry: "Digital Marketing", address: "Jl. Pemuda No. 45, Surabaya", phone: "031-5557890", count: 5 },
-                    { id: 3, name: "PT. Inovasi Mandiri", industry: "Konsultan IT", address: "Jl. Diponegoro No. 78, Surabaya", phone: "031-5553456", count: 12 },
-                  ]}
-                />
+                <SectionProgressOverview />
+                <SectionDudiAktif />
               </div>
             </div>
           </div>

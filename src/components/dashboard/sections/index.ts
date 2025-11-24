@@ -14,8 +14,8 @@
  */
 
 // REFACTORED_DASHBOARD_EXPORT: Export semua komponen dashboard section
-export { SectionLatestMagang, latestMagangDummy } from './latest-magang'
-export { SectionLatestLogbook, latestLogbookDummy } from './latest-logbook'
+export { SectionLatestMagang } from './latest-magang'
+export { SectionLatestLogbook } from './latest-logbook'
 export { SectionMagangCards, type MagangStats } from './magang-cards'
 export { SectionLogbookCards, type LogbookStats } from './logbook-cards'
 export { SectionDudiAktif, type DudiItem } from './dudi-aktif'

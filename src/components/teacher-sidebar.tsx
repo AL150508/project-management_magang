@@ -17,7 +17,6 @@ import { ChevronDown, LogOut, Settings, User } from "lucide-react"
 import { cn, showConfirmation, showSuccess } from "@/lib & database connection/utils"
 import { useAuth } from "@/context/auth-context"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { NotificationToggle } from "@/components/notification-toggle"
 
@@ -212,10 +211,7 @@ export function TeacherSidebar({ activeItem, onItemClick }: TeacherSidebarProps)
             <div className="p-4">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    className="w-full flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm"
-                  >
+                  <button className="w-full flex items-center gap-3 p-3 rounded-lg bg-white border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm">
                     <Avatar className="h-10 w-10 flex-shrink-0">
                       <AvatarImage 
                         src={user?.avatar ? `${user.avatar}?t=${Date.now()}` : undefined} 
@@ -231,7 +227,7 @@ export function TeacherSidebar({ activeItem, onItemClick }: TeacherSidebarProps)
                       <p className="text-xs text-gray-600 truncate">{user?.fullName || user?.username || "Administrator"}</p>
                     </div>
                     <ChevronDown className="h-4 w-4 text-gray-500 flex-shrink-0" />
-                  </Button>
+                  </button>
                 </DropdownMenuTrigger>
                 
                 <DropdownMenuContent align="end" className="w-56">
@@ -256,7 +252,7 @@ export function TeacherSidebar({ activeItem, onItemClick }: TeacherSidebarProps)
                   
                   <DropdownMenuItem 
                     className="cursor-pointer"
-                    onClick={() => router.push('/profile')}
+                    onClick={() => router.push('/profile') }
                   >
                     <User className="h-4 w-4 mr-2" />
                     Profile
@@ -264,7 +260,7 @@ export function TeacherSidebar({ activeItem, onItemClick }: TeacherSidebarProps)
                   
                   <DropdownMenuItem 
                     className="cursor-pointer"
-                    onClick={() => router.push('/profile')}
+                    onClick={() => router.push('/pengaturan')}
                   >
                     <Settings className="h-4 w-4 mr-2" />
                     Pengaturan
@@ -300,73 +296,39 @@ export function TeacherSidebar({ activeItem, onItemClick }: TeacherSidebarProps)
               </DropdownMenu>
             </div>
           ) : (
-            <div className="p-4 flex justify-center">
+            <div className="p-2 flex justify-center">
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="w-10 h-10 rounded-full p-0 hover:opacity-80 transition-opacity"
-                  >
-                    <Avatar className="h-10 w-10">
+                  <button className="w-10 h-10 rounded-full p-0 overflow-hidden hover:ring-2 hover:ring-blue-500 hover:ring-offset-2 transition-all">
+                    <Avatar className="w-10 h-10">
                       <AvatarImage 
                         src={user?.avatar ? `${user.avatar}?t=${Date.now()}` : undefined} 
                         alt={user?.fullName || "Guru"}
                         key={user?.avatar}
                       />
-                      <AvatarFallback className="bg-blue-600 text-white text-sm font-semibold">
+                      <AvatarFallback className="bg-blue-600 text-white font-semibold text-sm">
                         {user?.fullName?.charAt(0)?.toUpperCase() || "G"}
                       </AvatarFallback>
                     </Avatar>
-                  </Button>
+                  </button>
                 </DropdownMenuTrigger>
                 
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="flex items-center gap-3 p-3">
-                    <Avatar className="h-10 w-10">
-                      <AvatarImage 
-                        src={user?.avatar ? `${user.avatar}?t=${Date.now()}` : undefined} 
-                        alt={user?.fullName || "Guru"}
-                        key={user?.avatar}
-                      />
-                      <AvatarFallback className="bg-blue-600 text-white text-sm font-semibold">
-                        {user?.fullName?.charAt(0)?.toUpperCase() || "G"}
-                      </AvatarFallback>
-                    </Avatar>
-                    <div className="flex flex-col">
-                      <span className="text-sm font-semibold text-gray-800">Guru Admin</span>
-                      <span className="text-xs text-gray-500">{user?.fullName || user?.username || "Administrator"}</span>
-                    </div>
-                  </div>
-                  
-                  <DropdownMenuSeparator />
-                  
+                <DropdownMenuContent 
+                  align="end" 
+                  side="right"
+                  className="w-48 bg-white border border-gray-200 shadow-lg rounded-lg"
+                  sideOffset={8}
+                >
                   <DropdownMenuItem 
-                    className="cursor-pointer"
+                    className="cursor-pointer py-2"
                     onClick={() => router.push('/profile')}
                   >
                     <User className="h-4 w-4 mr-2" />
-                    Profile
+                    <span className="text-sm">Profil</span>
                   </DropdownMenuItem>
                   
                   <DropdownMenuItem 
-                    className="cursor-pointer"
-                    onClick={() => router.push('/profile')}
-                  >
-                    <Settings className="h-4 w-4 mr-2" />
-                    Pengaturan
-                  </DropdownMenuItem>
-                  
-                  <DropdownMenuSeparator />
-                  
-                  <div className="px-2 py-2">
-                    <NotificationToggle />
-                  </div>
-                  
-                  <DropdownMenuSeparator />
-                  
-                  <DropdownMenuItem 
-                    className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                    className="cursor-pointer text-red-600 hover:text-red-700 hover:bg-red-50 py-2"
                     onClick={() => {
                       showConfirmation({
                         message: "Apakah Anda yakin ingin keluar dari aplikasi?",
@@ -381,7 +343,7 @@ export function TeacherSidebar({ activeItem, onItemClick }: TeacherSidebarProps)
                     }}
                   >
                     <LogOut className="h-4 w-4 mr-2" />
-                    Keluar
+                    <span className="text-sm">Keluar</span>
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

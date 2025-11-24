@@ -70,6 +70,21 @@ export const showWarning = (message: string) => {
   toast.warning(message)
 }
 
+// Custom toast untuk aksi guru (white background, black text)
+export const showGuruAction = (message: string, action?: string) => {
+  const fullMessage = action ? `${action}: ${message}` : message
+  toast(fullMessage, {
+    duration: 4000,
+    className: "bg-white text-gray-900 border border-gray-200 shadow-lg",
+    style: {
+      background: "white",
+      color: "#111827",
+      border: "1px solid #e5e7eb",
+      fontWeight: "500"
+    }
+  })
+}
+
 // Loading toast with promise
 export const showLoadingToast = async <T>(
   promise: Promise<T>,

@@ -150,10 +150,6 @@ export function ProfileView({ onEditClick }: ProfileViewProps) {
                   <Mail className="h-5 w-5 flex-shrink-0 text-gray-500" />
                   <span className="truncate">{user.email || "Email belum diatur"}</span>
                 </div>
-                <div className="flex items-center justify-center sm:justify-start gap-3 text-sm sm:text-base text-gray-700">
-                  <MapPin className="h-5 w-5 flex-shrink-0 text-gray-500" />
-                  <span className="truncate">Lokasi belum diatur</span>
-                </div>
               </div>
               
               {/* Edit Button - Mobile */}

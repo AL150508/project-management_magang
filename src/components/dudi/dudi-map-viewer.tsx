@@ -78,12 +78,12 @@ export function DudiMapViewer({ className, onMarkerClick }: DudiMapViewerProps) 
       // Ambil data siswa magang untuk menghitung kuota terisi
       const { data: magangData } = await supabaseBrowser
         .from("magang")
-        .select("Dudi, status")
+        .select("nama_dudi, status")
         .eq("status", "Aktif")
       
       // Hitung kuota terisi per DUDI
       const kuotaTerisi = (magangData || []).reduce((acc: Record<string, number>, item: any) => {
-        const dudiName = item.Dudi
+        const dudiName = item.nama_dudi
         if (dudiName) {
           acc[dudiName] = (acc[dudiName] || 0) + 1
         }
